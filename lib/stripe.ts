@@ -45,57 +45,10 @@ export async function createCheckoutSession(
     automatic_tax: {
        enabled: true,
     },
-    custom_fields: [
-        {
-          key: 'id_number', // Clave personalizada para el campo
-          label: {
-            type: 'custom',
-            custom: 'ID Number (Mandatory for companies)',
-          },
-          type: 'text',
-        },
-      ],
   });
 
   return session; // Return the full session object
 }
-/*
-// Create some commonly used Stripe-related functions
-export async function createCheckoutSession(
-  amount: number,
-  quantity: number,
-  description: string,
-  userId: string,
-  emailAddress: string
-) {
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `${quantity} Credits of DreamBez.Com`,
-            description: description,
-          },
-          unit_amount: Math.round(amount * 100), // Ensure the amount is an integer
-        },
-        quantity: 1,
-      },
-    ],
-    mode: 'payment',
-    success_url: `${env.NEXT_PUBLIC_APP_URL}/payment-status?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/pricing`,
-    metadata: {
-      userId,
-      credits: quantity.toString(),
-    },
-    customer_email: emailAddress, // Pre-fill the customer's email address
-  });
-
-  return session; // Return the full session object
-}
-*/
 
 export async function handleStripeWebhook(/* Parameters */) {
   // Implement logic to handle Stripe webhook
