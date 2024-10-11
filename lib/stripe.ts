@@ -42,6 +42,9 @@ export async function createCheckoutSession(
     invoice_creation: {
       enabled: true,
     },
+    tax_context: {
+       automatic_tax_enabled: true,
+    },
     custom_fields: [
         {
           key: 'id_number', // Clave personalizada para el campo
