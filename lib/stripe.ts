@@ -35,16 +35,14 @@ export async function createCheckoutSession(
     phone_number_collection: {
       enabled: true, 
     },
-       tax_id_collection: {
+    tax_id_collection: {
       enabled: true, // Enable VAT/Tax ID collection
     },
     allow_promotion_codes: true,
     invoice_creation: {
       enabled: true,
     },
-    tax_context: {
-       automatic_tax_enabled: true,
-    },
+    automatic_tax: true,
     custom_fields: [
         {
           key: 'id_number', // Clave personalizada para el campo
