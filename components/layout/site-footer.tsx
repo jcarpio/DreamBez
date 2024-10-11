@@ -50,10 +50,10 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
           <p className="text-left text-sm text-muted-foreground">
             Powered by{" "}
             <Link
-              href="https://dreambez.com"
+              href="https://www.enkire.com"
               target="_blank"
               className="font-medium underline underline-offset-4"
-            > DreamBez.com </Link> and inspired by {" "}
+            > Enkire </Link> and inspired by {" "}
             <Link
               href="https://headshots.fun"
               target="_blank"
@@ -61,13 +61,13 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
             >
               HeadShots.fun
             </Link>
-            . Open source by {" "}
+            . Open source project orinally by {" "}
             <Link
-              href="https://www.enkire.com"
+              href="https://twitter.com/mickasm"
               target="_blank"
               className="font-medium underline underline-offset-4"
             >
-              Enkire
+              mickasmt
             </Link>
             .
           </p>
