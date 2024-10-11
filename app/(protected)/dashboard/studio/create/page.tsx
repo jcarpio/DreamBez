@@ -129,9 +129,9 @@ export default function CreateStudioPage() {
         body: JSON.stringify({
           name,
           type,
-          modelUser: "joselapasion",
+          modelUser: "man",
           modelVersion: "613a21a57e8545532d2f4016a7c3cfa3c7c63fded03001c2e69183d557a929db",
-          hf_lora: "enkire/replicate-joselapasion-lora-face",
+          hf_lora: "enkire/q9LoMc9f24zR7nzbEZLmooDyN8dBuAt3gAuXPu6mlc",
           defaultHairStyle: "short",
           defaultUserHeight: "168",
           extraInfo: "x",
