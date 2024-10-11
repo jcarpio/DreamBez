@@ -38,7 +38,7 @@ function PaymentStatus() {
   }, [searchParams]);
 
   const handleRedirect = () => {
-    router.push(status === 'completed' ? '/dashboard' : '/pricing');
+    router.push(status === 'completed' ? 'dashboard/billing' : '/pricing');
   };
 
   if (loading) {
