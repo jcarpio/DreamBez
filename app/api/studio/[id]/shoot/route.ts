@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         let aspect_ratio =  "9:16";
         const default_negative_prompt = "flaws in the eyes, flaws in the face, flaws, lowres, non-HDRi, low quality, worst quality,artifacts noise, text, watermark, glitch, deformed, mutated, ugly, disfigured, hands, low resolution, partially rendered objects,  deformed or partially rendered eyes, deformed, deformed eyeballs, cross-eyed,blurry,border, picture frame";
-        const final_prompt = prompt.replace(`{prompt}`, `${studio.modelUser} a ${studio.type} with ${studio.defaultHairStyle} hair, ${studio.defaultUserHeight}cm tall `) + `, headshot of ${studio.modelUser} a ${studio.type} `;
+        const final_prompt = prompt.replace(`{prompt}`, `${studio.modelUser} a ${studio.type} with ${studio.defaultHairStyle} hair, ${studio.defaultUserHeight}cm tall `) + `, ${studio.modelUser} a ${studio.type} `;
         console.log("final_prompt", final_prompt);
 
         switch (aspectRatio) {
