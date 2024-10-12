@@ -53,8 +53,6 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
               target="_blank"
               className="font-medium underline underline-offset-4"
             > Contact us </Link> {" "}
-            <Link
-            {" "} 
             Powered by{" "}
             <Link
               href="https://www.enkire.com"
