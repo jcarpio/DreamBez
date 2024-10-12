@@ -48,6 +48,13 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
             Copyright &copy; 2024. All rights reserved.
           </span> */}
           <p className="text-left text-sm text-muted-foreground">
+            <Link
+              href="mailto://support@enkire.com"
+              target="_blank"
+              className="font-medium underline underline-offset-4"
+            > Contact us </Link> {" "}
+            <Link
+            {" "} 
             Powered by{" "}
             <Link
               href="https://www.enkire.com"
