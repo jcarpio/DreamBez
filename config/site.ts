@@ -7,7 +7,7 @@ export const siteConfig: SiteConfig = {
   title: "Gift Dreams | DreamBez.com",
   name: "DreamBez.com",
   description:
-    "At DreamBez.com, we create your Hyper Realistic Dream Album with Artificial Intelligence and lots of Love.",
+    "DreamBez: Unleashing Hyper-Realistic Dreams Through Cutting-Edge AI Imagery",
   url: site_url,
   ogImage: `${site_url}/_static/og.jpg`,
   links: {
@@ -20,7 +20,7 @@ export const siteConfig: SiteConfig = {
     "@type": "WebSite",
     "name": "DreamBez.com",
     "url": site_url,
-    "description": "At DreamBez.com, we create your Hyper Realistic Dream Photos and Album with Artificial Intelligence and lots of Love.",
+    "description": "DreamBez: Unleashing Hyper-Realistic Dreams Through Cutting-Edge AI Imagery",
     "potentialAction": {
       "@type": "SearchAction",
       "target": `${site_url}/search?q={search_term_string}`,
