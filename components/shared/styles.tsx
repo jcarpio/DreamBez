@@ -576,7 +576,7 @@ export const styles = [
       {
         name: "Villa Porsche",
         img: "dream-luxury-white-porsche.jpg",
-        prompt: {prompt}, stands on the terrace of his luxurious villa, dressed in an elegant suit and wearing a Rolex watch. Behind him, a sleek Porsche 911 Carrera gleams in the sunlight. He shares a joyful smile and a Cuban cigar with his friends, exuding an air of relaxation and sophistication. The scene radiates peace, luxury, and glamour, with the high-end setting and {prompt}’s calm demeanor capturing the essence of refined leisure.", 
+        prompt: "{prompt}, stands on the terrace of his luxurious villa, dressed in an elegant suit and wearing a Rolex watch. Behind him, a sleek Porsche 911 Carrera gleams in the sunlight. He shares a joyful smile and a Cuban cigar with his friends, exuding an air of relaxation and sophistication. The scene radiates peace, luxury, and glamour, with the high-end setting and {prompt}’s calm demeanor capturing the essence of refined leisure.", 
         negative_prompt: "",
         category: "man-dream"
     },
