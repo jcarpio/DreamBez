@@ -567,7 +567,7 @@ export const styles = [
         category: "man-dream"
     },
       {
-        name: "Mon",
+        name: "Moon",
         img: "moon.jpg",
         prompt: "{prompt}, beams with happiness as he walks on the surface of the moon alongside fellow astronauts. His joyful expression is visible through the clear visor of his spacesuit helmet, reflecting the excitement of this lunar adventure. The barren, rocky moon landscape and the distant Earth in the background create a breathtaking scene of exploration, with {prompt}’s delighted face at the heart of it.",
         negative_prompt: "",
