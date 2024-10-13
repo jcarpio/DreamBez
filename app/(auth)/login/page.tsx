@@ -33,9 +33,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">
             Welcome back
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Use email to sign in to your HeadShots.fun account
-          </p>
         </div>
         <Suspense>
           <UserAuthForm />
