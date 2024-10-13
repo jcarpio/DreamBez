@@ -559,6 +559,13 @@ export const styles = [
         negative_prompt: "",
         category: "man-dream"
     },
+    {
+        name: "Sailing",
+        img: "sailing-friends.jpg",
+        prompt: "{prompt}, beams with happiness and pride in a close-up shot, steering a magnificent sailboat on his round-the-world journey. His family and friends gather around, their laughter carried by the breeze. The sunlight sparkles off the ocean’s surface, highlighting the joy and sense of adventure on his face as he enjoys this once-in-a-lifetime moment surrounded by loved ones.",
+        negative_prompt: "",
+        category: "man-dream"
+    },
 ];
 
 export const domainPath = "https://web.dreambez.com/img";
