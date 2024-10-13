@@ -4,7 +4,7 @@ export const categories = [
     { name: 'Man Creative', id: 'man-creative' },
     { name: 'Woman Studio', id: 'woman-studio' },
     { name: 'Man Studio', id: 'man-studio' },
-    { name: 'Man Dream', id: 'man-dream' },
+    { name: 'Man Dreams', id: 'man-dream' },
 
 ];
 
@@ -555,7 +555,7 @@ export const styles = [
     {
         name: "Oscars",
         img: "oscar.jpg",
-        prompt: "{prompt}, holds the Oscar for Best Actor and actrise on the prestigious stage of the Academy Awards in Hollywood. {prompt} commanding presence, dressed in an elegant black tuxedo, is highlighted as he stands among other renowned actors and actresses. The audience applauds while the bright lights reflect off the golden statue in his hand. With the Hollywood elite surrounding him and a backdrop of shimmering gold, {prompt} takes center stage, the height of his achievement and stature clearly visible."
+        prompt: "{prompt}, holds the Oscar for Best Actor and actrise on the prestigious stage of the Academy Awards in Hollywood. {prompt} commanding presence, dressed in an elegant black tuxedo, is highlighted as he stands among other renowned actors and actresses. The audience applauds while the bright lights reflect off the golden statue in his hand. With the Hollywood elite surrounding him and a backdrop of shimmering gold, {prompt} takes center stage, the height of his achievement and stature clearly visible.",
         negative_prompt: "",
         category: "man-dream"
     },
