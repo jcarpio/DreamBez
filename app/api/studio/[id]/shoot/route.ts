@@ -71,7 +71,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
               guidance_scale: 3.5,
               output_quality: 80,
               prompt_strength: 0.8,
-              num_inference_steps: 28
+              num_inference_steps: 28,
+              disable_safety_checker: True
+              
         };
         
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
