@@ -72,7 +72,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
               output_quality: 80,
               prompt_strength: 0.8,
               num_inference_steps: 28,
-              disable_safety_checker: True
+              disable_safety_checker: true
               
         };
         
