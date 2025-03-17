@@ -6,6 +6,12 @@
 
 DreamBez.com is an AI-powered SaaS platform that generates hyper realistic images. Our goal is to provide high-quality, personalized headshots for everyone through advanced AI technology and user-friendly design.
 
+### GPT to create this project: 
+https://chatgpt.com/g/g-eVSRnkcH9-enkire-open-source-saas-developer
+
+## GhatGPT conversations to create DreamBez Project:
+https://chatgpt.com/share/67d8429f-fd50-8005-88d7-074fd04c3613
+
 ## Why DreamBez.com?
 
 - 🎨 **Instant Creativity**: Generate unique headshots in seconds
