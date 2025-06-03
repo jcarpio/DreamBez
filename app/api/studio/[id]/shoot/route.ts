@@ -13,11 +13,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         const { prompt, negative_prompt, aspectRatio, style } = await request.json();
         const studioId = params.id;
-        
+
         const studio = await prisma.studio.findUnique({
             where: { id: studioId },
         });
-        
+
         if (!studio) {
             return NextResponse.json({ error: "Studio not found" }, { status: 404 });
         }
@@ -56,9 +56,17 @@ export async function POST(request: Request, { params }: { params: { id: string 
         };
 
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
-        
         let prediction;
-        
+
+        const modelIsBlackForest = studio.hf_lora?.startsWith("huggingface.co/");
+        const modelVersion = modelIsBlackForest
+            ? "black-forest-labs/flux-dev-lora"
+            : studio.modelVersion ?? "";
+
+        if (!modelVersion) {
+            return NextResponse.json({ error: "Missing model version" }, { status: 400 });
+        }
+
         try {
             prediction = await prisma.prediction.create({
                 data: {
@@ -67,14 +75,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
                     status: "pending",
                 },
             });
-        
+
             const output = await replicate.predictions.create({
                 version: modelVersion,
                 input,
                 webhook: `${webhookUrl}?predictionId=${prediction.id}`,
                 webhook_events_filter: ["completed"]
             });
-        
+
             await prisma.prediction.update({
                 where: { id: prediction.id },
                 data: {
@@ -82,54 +90,24 @@ export async function POST(request: Request, { params }: { params: { id: string 
                     status: "processing",
                 },
             });
-        
+
             return NextResponse.json({ success: true, predictionId: prediction.id });
-        
+
         } catch (replicateError) {
             console.error("Error creating Replicate prediction:", replicateError);
-        
+
             if (prediction?.id) {
                 await prisma.prediction.update({
                     where: { id: prediction.id },
                     data: { status: "failed" },
                 });
             }
-        
+
             return NextResponse.json({ error: "Failed to create prediction" }, { status: 500 });
         }
 
-        const modelIsBlackForest = studio.hf_lora?.startsWith("huggingface.co/");
-
-        const modelVersion = modelIsBlackForest
-            ? "black-forest-labs/flux-dev-lora"
-            : studio.modelVersion ?? "";
-
-        const output = await replicate.predictions.create({
-            version: modelVersion,
-            input,
-            webhook: `${webhookUrl}?predictionId=${prediction.id}`,
-            webhook_events_filter: ["completed"]
-        });
-
-        await prisma.prediction.update({
-            where: { id: prediction.id },
-            data: {
-                pId: output.id,
-                status: "processing",
-            },
-        });
-
-        return NextResponse.json({ success: true, predictionId: prediction.id });
-
     } catch (error) {
         console.error("Error in shoot route:", error);
-
-        await prisma.prediction.update({
-            where: { id: prediction.id },
-            data: { status: "failed" },
-        });
-
-
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
