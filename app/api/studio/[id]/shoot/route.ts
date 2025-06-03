@@ -56,13 +56,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
         };
 
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
-        const prediction = await prisma.prediction.create({
+        let prediction = await prisma.prediction.create({
             data: {
                 studioId,
                 style: style,
                 status: "pending",
             },
         });
+
 
         const modelIsBlackForest = studio.hf_lora?.startsWith("huggingface.co/");
 
