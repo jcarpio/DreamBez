@@ -64,8 +64,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
         };
 
         const input = modelIsBlackForest
-            ? { ...inputBase, lora_weights: studio.hf_lora }
-            : { ...inputBase, hf_lora: studio.hf_lora };
+            ? {
+                ...inputBase,
+                lora_weights: studio.hf_lora,
+                hf_api_token: env.HUGGINGFACE_API_TOKEN,
+              }
+            : {
+                ...inputBase,
+                hf_lora: studio.hf_lora,
+              };
+
                 
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
         let prediction;
