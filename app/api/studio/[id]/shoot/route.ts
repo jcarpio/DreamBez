@@ -56,14 +56,47 @@ export async function POST(request: Request, { params }: { params: { id: string 
         };
 
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
-        let prediction = await prisma.prediction.create({
-            data: {
-                studioId,
-                style: style,
-                status: "pending",
-            },
-        });
-
+        
+        let prediction;
+        
+        try {
+            prediction = await prisma.prediction.create({
+                data: {
+                    studioId,
+                    style: style,
+                    status: "pending",
+                },
+            });
+        
+            const output = await replicate.predictions.create({
+                version: modelVersion,
+                input,
+                webhook: `${webhookUrl}?predictionId=${prediction.id}`,
+                webhook_events_filter: ["completed"]
+            });
+        
+            await prisma.prediction.update({
+                where: { id: prediction.id },
+                data: {
+                    pId: output.id,
+                    status: "processing",
+                },
+            });
+        
+            return NextResponse.json({ success: true, predictionId: prediction.id });
+        
+        } catch (replicateError) {
+            console.error("Error creating Replicate prediction:", replicateError);
+        
+            if (prediction?.id) {
+                await prisma.prediction.update({
+                    where: { id: prediction.id },
+                    data: { status: "failed" },
+                });
+            }
+        
+            return NextResponse.json({ error: "Failed to create prediction" }, { status: 500 });
+        }
 
         const modelIsBlackForest = studio.hf_lora?.startsWith("huggingface.co/");
 
