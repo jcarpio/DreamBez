@@ -62,7 +62,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
             disable_safety_checker: true,
             negative_prompt: negative_prompt || default_negative_prompt,
         };
-        
+
+        const input = modelIsBlackForest
+            ? { ...inputBase, lora_weights: studio.hf_lora }
+            : { ...inputBase, hf_lora: studio.hf_lora };
+                
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
         let prediction;
 
