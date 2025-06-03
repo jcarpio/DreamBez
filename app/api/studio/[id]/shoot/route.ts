@@ -90,12 +90,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     } catch (error) {
         console.error("Error in shoot route:", error);
 
-        if (request?.predictionId) {
-            await prisma.prediction.update({
-                where: { id: request.predictionId },
-                data: { status: "failed" },
-            });
-        }
+        await prisma.prediction.update({
+            where: { id: prediction.id },
+            data: { status: "failed" },
+        });
+
 
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
