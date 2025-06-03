@@ -40,20 +40,23 @@ export async function POST(request: Request, { params }: { params: { id: string 
                 return NextResponse.json({ error: "Invalid aspect ratio" }, { status: 400 });
         }
 
-        const input = {
+        const inputBase = {
             prompt: final_prompt,
-            hf_lora: studio.hf_lora,
             lora_scale: 0.8,
             num_outputs: 1,
             aspect_ratio: aspect_ratio,
             output_format: "jpg",
-            guidance_scale: 3.5,
+            guidance: 3,
             output_quality: 80,
             prompt_strength: 0.8,
             num_inference_steps: 28,
             disable_safety_checker: true,
             negative_prompt: negative_prompt || default_negative_prompt,
         };
+        
+        const input = modelIsBlackForest
+            ? { ...inputBase, lora_weights: studio.hf_lora }
+            : { ...inputBase, hf_lora: studio.hf_lora };
 
         const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/replicate`;
         let prediction;
