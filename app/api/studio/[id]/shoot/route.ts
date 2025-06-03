@@ -68,7 +68,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         const modelVersion = modelIsBlackForest
             ? "black-forest-labs/flux-dev-lora"
-            : studio.modelVersion;
+            : studio.modelVersion ?? "";
 
         const output = await replicate.predictions.create({
             version: modelVersion,
