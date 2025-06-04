@@ -21,24 +21,6 @@ export async function GET() {
       },
       orderBy: {
         createdAt: 'desc'
-      },
-      include: {
-        prediction: {
-          include: {
-            studio: {
-              select: {
-                id: true,
-                name: true,
-                user: {
-                  select: {
-                    id: true,
-                    name: true
-                  }
-                }
-              }
-            }
-          }
-        }
       }
     });
 
