@@ -256,7 +256,7 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                     <Clipboard className="mr-1 h-3 w-3" /> Copy Prompt
                                                 </Button>
                                             </div>
-                                        )
+                                        )}
                                     </div>
                                 </div>
                             ))}
