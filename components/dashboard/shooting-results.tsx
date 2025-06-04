@@ -313,7 +313,7 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleShare(prediction.imageUrl!, prediction.prompt);
+                                                                    handleShare(prediction.imageUrl!, prediction.prompt || null);
                                                                 }}
                                                                 className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
                                                             >
@@ -374,7 +374,7 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                     )}
                                                     
                                                     <button
-                                                        onClick={() => handleShare(prediction.imageUrl!, prediction.prompt)}
+                                                        onClick={() => handleShare(prediction.imageUrl!, prediction.prompt || null)}
                                                         className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
                                                         title="Compartir"
                                                     >
