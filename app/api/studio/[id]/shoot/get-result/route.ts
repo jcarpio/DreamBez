@@ -10,7 +10,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
         if (!session?.user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
         const { predictionDbId, pId } = await request.json();
         const studioId = params.id;
         
@@ -22,6 +21,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
           return NextResponse.json({ error: "Studio not found" }, { status: 404 });
         }
 
+        // 🔥 OBTENER LA PREDICCIÓN ACTUAL CON EL PROMPT
+        const currentPrediction = await prisma.prediction.findUnique({
+            where: { id: predictionDbId },
+            select: {
+                id: true,
+                prompt: true,
+                status: true,
+                imageUrl: true
+            }
+        });
+
+        if (!currentPrediction) {
+            return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
+        }
+        
         // Request predictions results
         const output = await replicate.predictions.get(pId as string); 
         
@@ -29,7 +43,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
             const originalImageUrl = output.output[0];
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`;
             const newImageUrl = await uploadToR2(originalImageUrl, fileName);
-
+            
             await prisma.prediction.update({
                 where: { id: predictionDbId }, 
                 data: { 
@@ -37,13 +51,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
                     status: "completed"
                 },
             });
-
+            
             return NextResponse.json({ 
                 success: true, 
                 predictionId: predictionDbId, 
                 pId: pId,
                 imageUrl: newImageUrl,
-                status: output.status
+                status: "completed",
+                prompt: currentPrediction.prompt
             });
         } else if (output.status === "failed") {
             console.log("Prediction failed");
@@ -52,6 +67,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
                 data: { 
                     status: "failed"
                 },
+            });
+            
+            return NextResponse.json({ 
+                success: true, 
+                predictionId: predictionDbId, 
+                pId: pId,
+                status: "failed",
+                prompt: currentPrediction.prompt
             });
         } else {
             // Processing status
@@ -62,25 +85,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
                     status: "processing"
                 },
             });
+            
             return NextResponse.json({ 
                 success: true, 
                 predictionId: predictionDbId, 
                 pId: pId,
-                status: "processing"
+                status: "processing",
+                prompt: currentPrediction.prompt
             });
         }
         
-        // Returns updated forecast information
-        return NextResponse.json({ 
-            success: true, 
-            predictionId: predictionDbId, 
-            pId: pId,
-            imageUrl: output.output[0],
-            status: output.status
-        });
     } catch (error) {
         console.error("Error in shoot route:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
-
