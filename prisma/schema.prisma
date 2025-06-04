@@ -63,8 +63,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   studios       Studio[]
-  transactions  CreditTransaction[] // Relation to CreditTransaction model
-  stripeTransactions  StripeTransaction[] // Added the missing relation to StripeTransaction
+  transactions  CreditTransaction[]
+  stripeTransactions  StripeTransaction[]
 
   // Restored fields for Stripe subscriptions
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
@@ -73,7 +73,10 @@ model User {
   stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
 
   // New relationship field for subscriptions
-  subscriptions          Subscription[]  // Relation with subscriptions
+  subscriptions          Subscription[]
+
+  // New relationship for user favorites
+  favorites              FavoritePrediction[]
 
   @@map(name: "users")
 }
@@ -94,7 +97,6 @@ enum StudioStatus {
    Failed
 }
 
-// Add this model at the end of the file
 model Studio {
   id          String       @id @default(cuid())
   name        String
@@ -102,10 +104,10 @@ model Studio {
   modelUser   String?
   modelVersion String?
   hf_lora     String?
-  status      StudioStatus   @default(Pending) // Pending, Processing, Completed, Failed
+  status      StudioStatus   @default(Pending)
   defaultHairStyle String?
   defaultUserHeight String?
-  extraInfo   String?       // JCC: create for future needs
+  extraInfo   String?
   images      String[]
   userId      String
   user        User         @relation(fields: [userId], references: [id])
@@ -121,7 +123,7 @@ model Prediction {
   pId       String?
   studioId  String
   studio   Studio  @relation("StudioPredictions", fields: [studioId], references: [id], onDelete: Cascade)
-  status    String   @default("pending") // "pending", "processing", "completed", "failed"
+  status    String   @default("pending")
   hairStyle String?
   userHeight String?
   style     String?
@@ -129,8 +131,42 @@ model Prediction {
   prompt    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // New fields for voting system
+  isShared  Boolean  @default(false)  // Whether user decides to share the image publicly
+  likesCount Int     @default(0)      // Counter for likes this image receives
 
   @@map(name: "predictions")
+}
+
+// New table to manage user favorites
+model FavoritePrediction {
+  id            String   @id @default(cuid())
+  userId        String
+  predictionId  String
+  
+  // Fields copied from Prediction for efficiency (avoid JOINs)
+  imageUrl      String
+  prompt        String?
+  style         String?
+  hairStyle     String?
+  userHeight    String?
+  status        String
+  studioId      String
+  studioName    String   // Studio name for display
+  studioUserId  String   // ID of the user who created the original image
+  studioUserName String? // Name of the user who created the image (to show "by @username")
+  
+  createdAt     DateTime @default(now()) // When it was added to favorites
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // A user cannot have the same prediction as favorite twice
+  @@unique([userId, predictionId])
+  @@index([userId])
+  @@index([predictionId])
+  @@map(name: "favorite_predictions")
 }
 
 enum TransactionType {
@@ -153,7 +189,6 @@ model StripeTransaction {
   @@map(name: "stripe_transactions")
 }
 
-// Added CreditTransaction model
 model CreditTransaction {
   id        String   @id @default(cuid())
   userId    String
@@ -171,17 +206,16 @@ model Subscription {
   stripePriceId         String?
   stripeCurrentPeriodEnd DateTime?
   status                String
-  credits               Int      @default(0) // Added to save credits
+  credits               Int      @default(0)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
 
-// Tables for managing invitation codes and waiting lists
 model Waitlist {
-  id        String   @id @default(cuid()) // Unique identifier
-  email     String   @unique              // The email of the user
-  createdAt DateTime @default(now())       // Timestamp when the email was added
-  processed Boolean  @default(false)       // Whether the user has been processed or not
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  processed Boolean  @default(false)
 }
 
 model InvitationCode {
