@@ -96,16 +96,8 @@ export function ShootingResults({
     const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
     const { isMobile } = useMediaQuery();
 
-    useEffect(() => {
-        setPredictions(initialPredictions);
-        setProcessingPredictions(initialPredictions.filter(p => p.status === "processing").map(p => p.id));
-        
-        // Load user's favorite status for each prediction
-        loadUserFavorites();
-    }, [initialPredictions]);
-
     // Load which predictions are in user's favorites
-    const loadUserFavorites = async () => {
+    const loadUserFavorites = useCallback(async () => {
         if (!currentUserId) return;
         
         try {
@@ -118,13 +110,24 @@ export function ShootingResults({
             
             if (response.ok) {
                 const { favorites } = await response.json();
-                const favoriteIds = new Set(favorites.map((f: any) => f.predictionId));
+                // Fix: Explicitly type the Set as Set<string>
+                const favoriteIds = new Set<string>(
+                    favorites.map((f: { predictionId: string }) => f.predictionId)
+                );
                 setLikedImages(favoriteIds);
             }
         } catch (error) {
             console.error("Error loading user favorites:", error);
         }
-    };
+    }, [currentUserId]); // Add currentUserId as dependency
+
+    useEffect(() => {
+        setPredictions(initialPredictions);
+        setProcessingPredictions(initialPredictions.filter(p => p.status === "processing").map(p => p.id));
+        
+        // Load user's favorite status for each prediction
+        loadUserFavorites();
+    }, [initialPredictions, loadUserFavorites]); // Add loadUserFavorites to dependencies
 
     const handleLike = async (predictionId: string) => {
         if (!currentUserId) {
