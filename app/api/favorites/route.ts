@@ -107,15 +107,14 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         predictionId: predictionId,
-        // Solo incluir campos adicionales si existen en tu esquema
-        ...(prediction.imageUrl && { imageUrl: prediction.imageUrl }),
-        ...(prediction.prompt && { prompt: prediction.prompt }),
-        ...(prediction.style && { style: prediction.style }),
-        ...(prediction.status && { status: prediction.status }),
-        ...(prediction.studioId && { studioId: prediction.studioId }),
-        ...(prediction.studio?.name && { studioName: prediction.studio.name }),
-        ...(prediction.studio?.userId && { studioUserId: prediction.studio.userId }),
-        ...(prediction.studio?.user?.name && { studioUserName: prediction.studio.user.name })
+        imageUrl: prediction.imageUrl || '',
+        prompt: prediction.prompt || '',
+        style: prediction.style || '',
+        status: prediction.status || 'pending',
+        studioId: prediction.studioId || '',
+        studioName: prediction.studio?.name || '',
+        studioUserId: prediction.studio?.userId || '',
+        studioUserName: prediction.studio?.user?.name || ''
       }
     });
 
