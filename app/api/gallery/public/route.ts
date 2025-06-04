@@ -247,10 +247,18 @@ export async function POST(request: NextRequest) {
         orderBy = [{ likesCount: 'desc' }, { createdAt: 'desc' }];
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        whereConditions.createdAt = {
-          ...whereConditions.createdAt,
-          gte: sevenDaysAgo
-        };
+        
+        // Combine with existing createdAt filter if it exists
+        if (whereConditions.createdAt && typeof whereConditions.createdAt === 'object') {
+          whereConditions.createdAt = {
+            ...whereConditions.createdAt,
+            gte: sevenDaysAgo
+          };
+        } else {
+          whereConditions.createdAt = {
+            gte: sevenDaysAgo
+          };
+        }
         break;
       default:
         orderBy = [{ createdAt: 'desc' }];
