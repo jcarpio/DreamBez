@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Download, Camera, Heart, Share2, Copy, Eye } from "lucide-react";
+import { Loader2, Download, Camera, Heart, Share2, Copy, Eye, Globe, Lock } from "lucide-react";
 import { Icons } from "@/components/shared/icons";
 import { EmptyPlaceholder } from "@/components/shared/empty-placeholder";
 import { ShootModal } from "@/components/modals/shoot";
@@ -21,6 +21,8 @@ interface Prediction {
     style: string | null;
     pId: string | null;
     prompt?: string | null;
+    isShared?: boolean;
+    likesCount?: number;
 }
 
 interface ShootingResultsProps {
@@ -28,6 +30,7 @@ interface ShootingResultsProps {
     studioId: string;
     studioStatus: string;
     onShootComplete: () => void;
+    currentUserId?: string; // To identify if user can modify share status
 }
 
 const downloadImage = async (imageUrl: string) => {
@@ -66,7 +69,7 @@ const getTimeAgo = (date: string): string => {
     const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
 
     if (diffInSeconds < 60) {
-        return 'ahora';
+        return 'now';
     } else if (diffInSeconds < 3600) {
         const minutes = Math.floor(diffInSeconds / 60);
         return `${minutes}m`;
@@ -79,30 +82,154 @@ const getTimeAgo = (date: string): string => {
     }
 };
 
-export function ShootingResults({ predictions: initialPredictions, studioId, studioStatus, onShootComplete }: ShootingResultsProps) {
+export function ShootingResults({ 
+    predictions: initialPredictions, 
+    studioId, 
+    studioStatus, 
+    onShootComplete,
+    currentUserId 
+}: ShootingResultsProps) {
     const [predictions, setPredictions] = useState(initialPredictions);
     const [processingPredictions, setProcessingPredictions] = useState<string[]>([]);
     const [hoveredImage, setHoveredImage] = useState<string | null>(null);
     const [likedImages, setLikedImages] = useState<Set<string>>(new Set());
+    const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
     const { isMobile } = useMediaQuery();
 
     useEffect(() => {
         setPredictions(initialPredictions);
         setProcessingPredictions(initialPredictions.filter(p => p.status === "processing").map(p => p.id));
+        
+        // Load user's favorite status for each prediction
+        loadUserFavorites();
     }, [initialPredictions]);
 
-    const handleLike = (predictionId: string) => {
-        setLikedImages(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(predictionId)) {
-                newSet.delete(predictionId);
-                toast.success("Removido de favoritos");
-            } else {
-                newSet.add(predictionId);
-                toast.success("Añadido a favoritos");
+    // Load which predictions are in user's favorites
+    const loadUserFavorites = async () => {
+        if (!currentUserId) return;
+        
+        try {
+            const response = await fetch('/api/favorites', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            if (response.ok) {
+                const { favorites } = await response.json();
+                const favoriteIds = new Set(favorites.map((f: any) => f.predictionId));
+                setLikedImages(favoriteIds);
             }
-            return newSet;
-        });
+        } catch (error) {
+            console.error("Error loading user favorites:", error);
+        }
+    };
+
+    const handleLike = async (predictionId: string) => {
+        if (!currentUserId) {
+            toast.error("Please login to like images");
+            return;
+        }
+
+        if (loadingActions.has(predictionId)) return;
+
+        setLoadingActions(prev => new Set([...prev, predictionId]));
+        
+        try {
+            const isCurrentlyLiked = likedImages.has(predictionId);
+            const method = isCurrentlyLiked ? 'DELETE' : 'POST';
+            
+            const response = await fetch('/api/favorites', {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ predictionId }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update local liked state
+                setLikedImages(prev => {
+                    const newSet = new Set(prev);
+                    if (isCurrentlyLiked) {
+                        newSet.delete(predictionId);
+                        toast.success("Removed from favorites");
+                    } else {
+                        newSet.add(predictionId);
+                        toast.success("Added to favorites");
+                    }
+                    return newSet;
+                });
+
+                // Update likes count in predictions
+                setPredictions(prev => 
+                    prev.map(p => 
+                        p.id === predictionId 
+                            ? { ...p, likesCount: data.likesCount }
+                            : p
+                    )
+                );
+            } else {
+                toast.error("Failed to update favorite status");
+            }
+        } catch (error) {
+            console.error("Error handling like:", error);
+            toast.error("Failed to update favorite status");
+        } finally {
+            setLoadingActions(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(predictionId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleToggleShare = async (predictionId: string) => {
+        if (loadingActions.has(predictionId)) return;
+
+        setLoadingActions(prev => new Set([...prev, predictionId]));
+        
+        try {
+            const prediction = predictions.find(p => p.id === predictionId);
+            const newShareStatus = !prediction?.isShared;
+            
+            const response = await fetch('/api/predictions/share', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    predictionId,
+                    isShared: newShareStatus 
+                }),
+            });
+
+            if (response.ok) {
+                setPredictions(prev => 
+                    prev.map(p => 
+                        p.id === predictionId 
+                            ? { ...p, isShared: newShareStatus }
+                            : p
+                    )
+                );
+                
+                toast.success(newShareStatus ? "Image shared publicly" : "Image made private");
+            } else {
+                toast.error("Failed to update share status");
+            }
+        } catch (error) {
+            console.error("Error toggling share:", error);
+            toast.error("Failed to update share status");
+        } finally {
+            setLoadingActions(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(predictionId);
+                return newSet;
+            });
+        }
     };
 
     const handleShare = async (imageUrl: string, prompt: string | null) => {
@@ -116,20 +243,20 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
             } catch (error) {
                 // Fallback to copy
                 navigator.clipboard.writeText(imageUrl);
-                toast.success("Link copiado al portapapeles");
+                toast.success("Link copied to clipboard");
             }
         } else {
             navigator.clipboard.writeText(imageUrl);
-            toast.success("Link copiado al portapapeles");
+            toast.success("Link copied to clipboard");
         }
     };
 
     const handleCopyPrompt = (prompt: string | null | undefined) => {
         if (prompt) {
             navigator.clipboard.writeText(prompt);
-            toast.success("Prompt copiado al portapapeles");
+            toast.success("Prompt copied to clipboard");
         } else {
-            toast.error("No hay prompt para copiar");
+            toast.error("No prompt to copy");
         }
     };
 
@@ -181,7 +308,7 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                 <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
                     <CardHeader className="pb-6">
                         <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                            Resultados del Shooting ✨
+                            Shooting Results ✨
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -189,10 +316,11 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                             {predictions.map((prediction) => {
                                 const isLiked = likedImages.has(prediction.id);
                                 const isHovered = hoveredImage === prediction.id;
+                                const isLoading = loadingActions.has(prediction.id);
                                 
                                 return (
                                     <div key={prediction.id} className="group relative">
-                                        {/* Imagen Container */}
+                                        {/* Image Container */}
                                         <div 
                                             className="relative aspect-[3/4] overflow-hidden rounded-xl border-2 border-transparent bg-gradient-to-br from-gray-100 to-gray-200 shadow-md transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-purple-200"
                                             onMouseEnter={() => setHoveredImage(prediction.id)}
@@ -202,7 +330,7 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                 <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
                                                     <div className="text-center">
                                                         <Loader2 className="size-8 animate-spin text-purple-500 mx-auto mb-2" />
-                                                        <p className="text-xs text-purple-600 font-medium">Generando...</p>
+                                                        <p className="text-xs text-purple-600 font-medium">Generating...</p>
                                                     </div>
                                                 </div>
                                             ) : prediction.imageUrl ? (
@@ -235,11 +363,11 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                                             className="flex-1"
                                                                         >
                                                                             <Download className="mr-2 size-4" />
-                                                                            Descargar
+                                                                            Download
                                                                         </Button>
                                                                         <Drawer.Close asChild>
                                                                             <Button variant="outline" size="sm" className="flex-1">
-                                                                                Cerrar
+                                                                                Close
                                                                             </Button>
                                                                         </Drawer.Close>
                                                                     </div>
@@ -271,11 +399,11 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                                         size="sm"
                                                                     >
                                                                         <Download className="mr-2 size-4" />
-                                                                        Descargar
+                                                                        Download
                                                                     </Button>
                                                                     <DialogClose asChild>
                                                                         <Button variant="secondary" size="sm">
-                                                                            Cerrar
+                                                                            Close
                                                                         </Button>
                                                                     </DialogClose>
                                                                 </div>
@@ -283,39 +411,73 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                         </Dialog>
                                                     )}
 
-                                                    {/* Overlay con información al hover */}
+                                                    {/* Hover overlay with information */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                                                         {/* Status indicator */}
                                                         <div className="absolute top-3 left-3">
                                                             <div className={`w-3 h-3 rounded-full ${getStatusColor(prediction.status)} shadow-lg`} />
                                                         </div>
 
-                                                        {/* Time ago */}
-                                                        <div className="absolute top-3 right-3">
+                                                        {/* Share status indicator */}
+                                                        <div className="absolute top-3 right-3 flex items-center space-x-2">
+                                                            {prediction.isShared && (
+                                                                <div className="bg-green-500/80 backdrop-blur-sm rounded-full p-1">
+                                                                    <Globe className="w-3 h-3 text-white" />
+                                                                </div>
+                                                            )}
                                                             <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
                                                                 {getTimeAgo(prediction.createdAt)}
                                                             </span>
                                                         </div>
 
-                                                        {/* Acciones estilo Instagram */}
+                                                        {/* Actions - Instagram style */}
                                                         <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
+                                                            {/* Share toggle button (only for owner) */}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleToggleShare(prediction.id);
+                                                                }}
+                                                                disabled={isLoading}
+                                                                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 disabled:opacity-50"
+                                                                title={prediction.isShared ? "Make private" : "Share publicly"}
+                                                            >
+                                                                {isLoading && loadingActions.has(prediction.id) ? (
+                                                                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                                                                ) : prediction.isShared ? (
+                                                                    <Globe className="w-5 h-5 text-green-400" />
+                                                                ) : (
+                                                                    <Lock className="w-5 h-5 text-white" />
+                                                                )}
+                                                            </button>
+
+                                                            {/* Like button */}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     handleLike(prediction.id);
                                                                 }}
-                                                                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
+                                                                disabled={isLoading}
+                                                                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 disabled:opacity-50"
+                                                                title="Add to favorites"
                                                             >
-                                                                <Heart 
-                                                                    className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} 
-                                                                />
+                                                                {isLoading && loadingActions.has(prediction.id) ? (
+                                                                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                                                                ) : (
+                                                                    <Heart 
+                                                                        className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} 
+                                                                    />
+                                                                )}
                                                             </button>
+
+                                                            {/* Share link button */}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     handleShare(prediction.imageUrl!, prediction.prompt || null);
                                                                 }}
                                                                 className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
+                                                                title="Share image"
                                                             >
                                                                 <Share2 className="w-5 h-5 text-white" />
                                                             </button>
@@ -340,34 +502,49 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                             )}
                                         </div>
                                         
-                                        {/* Información inferior rediseñada */}
+                                        {/* Bottom information redesigned */}
                                         <div className="mt-3 space-y-3">
-                                            {/* Header con style y acciones */}
+                                            {/* Header with style and actions */}
                                             <div className="flex items-center justify-between">
-                                                <Badge 
-                                                    className="font-medium text-xs px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border-0" 
-                                                    variant="secondary"
-                                                >
-                                                    {prediction.style}
-                                                </Badge>
+                                                <div className="flex items-center space-x-2">
+                                                    <Badge 
+                                                        className="font-medium text-xs px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border-0" 
+                                                        variant="secondary"
+                                                    >
+                                                        {prediction.style}
+                                                    </Badge>
+                                                    
+                                                    {/* Likes count */}
+                                                    {(prediction.likesCount ?? 0) > 0 && (
+                                                        <span className="text-xs text-gray-500 flex items-center">
+                                                            <Heart className="w-3 h-3 mr-1 fill-red-500 text-red-500" />
+                                                            {prediction.likesCount}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 
-                                                {/* Acciones compactas para desktop */}
+                                                {/* Compact actions for desktop */}
                                                 <div className="hidden sm:flex items-center space-x-1">
                                                     <button
                                                         onClick={() => handleLike(prediction.id)}
-                                                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                                                        title="Me gusta"
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                                        title="Add to favorites"
                                                     >
-                                                        <Heart 
-                                                            className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
-                                                        />
+                                                        {isLoading && loadingActions.has(prediction.id) ? (
+                                                            <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                                                        ) : (
+                                                            <Heart 
+                                                                className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
+                                                            />
+                                                        )}
                                                     </button>
                                                     
                                                     {prediction.prompt && (
                                                         <button
                                                             onClick={() => handleCopyPrompt(prediction.prompt)}
                                                             className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                                                            title="Copiar prompt"
+                                                            title="Copy prompt"
                                                         >
                                                             <Copy className="w-4 h-4 text-gray-400" />
                                                         </button>
@@ -376,27 +553,27 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                     <button
                                                         onClick={() => handleShare(prediction.imageUrl!, prediction.prompt || null)}
                                                         className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                                                        title="Compartir"
+                                                        title="Share image"
                                                     >
                                                         <Share2 className="w-4 h-4 text-gray-400" />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {/* Prompt section mejorada */}
+                                            {/* Improved prompt section */}
                                             {prediction.prompt && prediction.prompt.trim() !== '' && (
                                                 <div className="bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-lg p-3 border border-gray-100">
                                                     <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
                                                         {prediction.prompt}
                                                     </p>
                                                     
-                                                    {/* Botón copy para móvil */}
+                                                    {/* Copy button for mobile */}
                                                     <button 
                                                         onClick={() => handleCopyPrompt(prediction.prompt)}
                                                         className="sm:hidden mt-2 w-full flex items-center justify-center space-x-2 text-xs text-purple-600 hover:text-purple-700 font-medium"
                                                     >
                                                         <Copy className="h-3 w-3" /> 
-                                                        <span>Copiar Prompt</span>
+                                                        <span>Copy Prompt</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -410,18 +587,18 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
             ) : (
                 <EmptyPlaceholder className="min-h-[80vh]">
                     <EmptyPlaceholder.Icon name="photo" />
-                    <EmptyPlaceholder.Title>No hay fotos aún</EmptyPlaceholder.Title>
+                    <EmptyPlaceholder.Title>No photos yet</EmptyPlaceholder.Title>
                     <EmptyPlaceholder.Description>
                         <br />
                         {studioStatus === "Completed" ? (
                             <>
-                                Inicia una nueva sesión de fotos para generar headshots.
+                                Start a new photo session to generate headshots.
                                 <br />
                                 <ShootModal studioId={studioId} onShootComplete={onShootComplete} />
                             </>
                         ) : (
                             <>
-                                Tu estudio se está procesando. En 24 horas estará listo para ayudarte a crear tus sueños hiper-realistas!
+                                Your studio is processing. In 24 hours it will be ready to help you create your hyper-realistic dreams!
                             </>
                         )}
                     </EmptyPlaceholder.Description>
