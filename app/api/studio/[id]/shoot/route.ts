@@ -84,6 +84,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
                     studioId,
                     style: style,
                     status: "pending",
+                    prompt: final_prompt, 
                 },
             });
 
