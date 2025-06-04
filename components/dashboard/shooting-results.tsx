@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Download, Camera } from "lucide-react";
+import { Loader2, Download, Camera, Clipboard } from "lucide-react";
 import { Icons } from "@/components/shared/icons";
 import { EmptyPlaceholder } from "@/components/shared/empty-placeholder";
 import { ShootModal } from "@/components/modals/shoot";
