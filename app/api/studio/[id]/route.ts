@@ -24,6 +24,7 @@ export const GET = auth(async (req, { params }: { params: { id: string } }) => {
             status: true,
             style: true,
             pId: true,
+            prompt: true,
           },
           orderBy: {
             createdAt: 'desc',
