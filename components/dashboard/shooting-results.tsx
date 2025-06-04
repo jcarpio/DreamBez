@@ -11,6 +11,7 @@ import { ShootModal } from "@/components/modals/shoot";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Drawer } from "vaul";
+import { toast } from "sonner";
 
 interface Prediction {
     id: string;
