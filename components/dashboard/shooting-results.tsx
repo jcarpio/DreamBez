@@ -19,6 +19,7 @@ interface Prediction {
     status: string;
     style: string | null;
     pId: string | null;
+    prompt?: string | null;
 }
 
 interface ShootingResultsProps {
@@ -87,6 +88,13 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
         setPredictions(initialPredictions);
         setProcessingPredictions(initialPredictions.filter(p => p.status === "processing").map(p => p.id));
     }, [initialPredictions]);
+
+    const handleCopy = (prompt: string | null | undefined) => {
+        if (prompt) {
+            navigator.clipboard.writeText(prompt);
+            toast.success("Prompt copied to clipboard!");
+        }
+    };
 
     const fetchPredictionResult = useCallback(async (prediction: Prediction) => {
         try {
@@ -241,6 +249,14 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                                 {getTimeAgo(prediction.createdAt)}
                                             </span>
                                         </div>
+                                        {prediction.prompt && (
+                                            <div className="flex flex-col gap-1 pt-2">
+                                                <p className="text-xs text-muted-foreground break-words">{prediction.prompt}</p>
+                                                <Button variant="outline" size="xs" onClick={() => handleCopy(prediction.prompt)}>
+                                                    <Clipboard className="mr-1 h-3 w-3" /> Copy Prompt
+                                                </Button>
+                                            </div>
+                                        )
                                     </div>
                                 </div>
                             ))}
