@@ -1,42 +1,46 @@
 // app/api/favorites/route.ts
+import { auth } from '@/auth';
+import { prisma } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { db } from '@/lib/db';
-import { favorites, predictions } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
 
 // GET - Fetch user's favorites
 export async function GET() {
   try {
-    const { userId } = auth();
+    const session = await auth();
     
-    if (!userId) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const userFavorites = await db
-      .select({
-        id: favorites.id,
-        predictionId: favorites.predictionId,
-        createdAt: favorites.createdAt,
+    const userFavorites = await prisma.favoritePrediction.findMany({
+      where: {
+        userId: session.user.id
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
         prediction: {
-          id: predictions.id,
-          imageUrl: predictions.imageUrl,
-          prompt: predictions.prompt,
-          style: predictions.style,
-          status: predictions.status,
-          createdAt: predictions.createdAt,
-          isShared: predictions.isShared,
-          likesCount: predictions.likesCount,
+          include: {
+            studio: {
+              select: {
+                id: true,
+                name: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            }
+          }
         }
-      })
-      .from(favorites)
-      .innerJoin(predictions, eq(favorites.predictionId, predictions.id))
-      .where(eq(favorites.userId, userId))
-      .orderBy(desc(favorites.createdAt));
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -55,9 +59,9 @@ export async function GET() {
 // POST - Add to favorites
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = auth();
+    const session = await auth();
     
-    if (!userId) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -73,14 +77,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if prediction exists
-    const prediction = await db
-      .select()
-      .from(predictions)
-      .where(eq(predictions.id, predictionId))
-      .limit(1);
+    // Check if prediction exists and get its details
+    const prediction = await prisma.prediction.findUnique({
+      where: {
+        id: predictionId
+      },
+      include: {
+        studio: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
 
-    if (prediction.length === 0) {
+    if (!prediction) {
       return NextResponse.json(
         { error: 'Prediction not found' },
         { status: 404 }
@@ -88,16 +104,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already favorited
-    const existingFavorite = await db
-      .select()
-      .from(favorites)
-      .where(and(
-        eq(favorites.userId, userId),
-        eq(favorites.predictionId, predictionId)
-      ))
-      .limit(1);
+    const existingFavorite = await prisma.favoritePrediction.findUnique({
+      where: {
+        userId_predictionId: {
+          userId: session.user.id,
+          predictionId: predictionId
+        }
+      }
+    });
 
-    if (existingFavorite.length > 0) {
+    if (existingFavorite) {
       return NextResponse.json(
         { error: 'Already in favorites' },
         { status: 409 }
@@ -105,27 +121,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to favorites
-    await db.insert(favorites).values({
-      userId,
-      predictionId,
-      createdAt: new Date(),
+    const newFavorite = await prisma.favoritePrediction.create({
+      data: {
+        userId: session.user.id,
+        predictionId: predictionId,
+        // Solo incluir campos adicionales si existen en tu esquema
+        ...(prediction.imageUrl && { imageUrl: prediction.imageUrl }),
+        ...(prediction.prompt && { prompt: prediction.prompt }),
+        ...(prediction.style && { style: prediction.style }),
+        ...(prediction.status && { status: prediction.status }),
+        ...(prediction.studioId && { studioId: prediction.studioId }),
+        ...(prediction.studio?.name && { studioName: prediction.studio.name }),
+        ...(prediction.studio?.userId && { studioUserId: prediction.studio.userId }),
+        ...(prediction.studio?.user?.name && { studioUserName: prediction.studio.user.name })
+      }
     });
 
-    // Update likes count
-    const newLikesCount = prediction[0].likesCount ? prediction[0].likesCount + 1 : 1;
-    
-    await db
-      .update(predictions)
-      .set({ 
-        likesCount: newLikesCount,
-        updatedAt: new Date()
-      })
-      .where(eq(predictions.id, predictionId));
+    // Update likes count in the original prediction
+    const updatedPrediction = await prisma.prediction.update({
+      where: {
+        id: predictionId
+      },
+      data: {
+        likesCount: {
+          increment: 1
+        }
+      }
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Added to favorites',
-      likesCount: newLikesCount
+      favorite: newFavorite,
+      likesCount: updatedPrediction.likesCount
     });
 
   } catch (error) {
@@ -140,9 +168,9 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove from favorites
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = auth();
+    const session = await auth();
     
-    if (!userId) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -159,16 +187,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if favorited
-    const existingFavorite = await db
-      .select()
-      .from(favorites)
-      .where(and(
-        eq(favorites.userId, userId),
-        eq(favorites.predictionId, predictionId)
-      ))
-      .limit(1);
+    const existingFavorite = await prisma.favoritePrediction.findUnique({
+      where: {
+        userId_predictionId: {
+          userId: session.user.id,
+          predictionId: predictionId
+        }
+      }
+    });
 
-    if (existingFavorite.length === 0) {
+    if (!existingFavorite) {
       return NextResponse.json(
         { error: 'Not in favorites' },
         { status: 404 }
@@ -176,34 +204,31 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove from favorites
-    await db
-      .delete(favorites)
-      .where(and(
-        eq(favorites.userId, userId),
-        eq(favorites.predictionId, predictionId)
-      ));
+    await prisma.favoritePrediction.delete({
+      where: {
+        userId_predictionId: {
+          userId: session.user.id,
+          predictionId: predictionId
+        }
+      }
+    });
 
-    // Update likes count
-    const prediction = await db
-      .select()
-      .from(predictions)
-      .where(eq(predictions.id, predictionId))
-      .limit(1);
-
-    const newLikesCount = Math.max(0, (prediction[0]?.likesCount || 1) - 1);
-    
-    await db
-      .update(predictions)
-      .set({ 
-        likesCount: newLikesCount,
-        updatedAt: new Date()
-      })
-      .where(eq(predictions.id, predictionId));
+    // Update likes count in the original prediction
+    const updatedPrediction = await prisma.prediction.update({
+      where: {
+        id: predictionId
+      },
+      data: {
+        likesCount: {
+          decrement: 1
+        }
+      }
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Removed from favorites',
-      likesCount: newLikesCount
+      likesCount: Math.max(0, updatedPrediction.likesCount)
     });
 
   } catch (error) {
