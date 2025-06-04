@@ -253,7 +253,7 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                         {prediction.prompt && (
                                             <div className="flex flex-col gap-1 pt-2">
                                                 <p className="text-xs text-muted-foreground break-words">{prediction.prompt}</p>
-                                                <Button variant="outline" size="xs" onClick={() => handleCopy(prediction.prompt)}>
+                                                <Button variant="outline" size="sm" onClick={() => handleCopy(prediction.prompt)}>
                                                     <Clipboard className="mr-1 h-3 w-3" /> Copy Prompt
                                                 </Button>
                                             </div>
