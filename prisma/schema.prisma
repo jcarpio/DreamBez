@@ -126,6 +126,7 @@ model Prediction {
   userHeight String?
   style     String?
   imageUrl  String?
+  prompt    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
