@@ -109,8 +109,8 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: 'AI Generated Image',
-                    text: prompt || 'Check out this AI generated image!',
+                    title: 'DreamBez AI Photo Studio',
+                    text: prompt || 'Check out this DreamBez AI generated image!',
                     url: imageUrl,
                 });
             } catch (error) {
