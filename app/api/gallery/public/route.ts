@@ -1,8 +1,7 @@
 // app/api/gallery/public/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { predictions, users } from '@/lib/db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 interface PublicGalleryQuery {
   page?: number;
@@ -24,73 +23,108 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Base query conditions
-    const baseConditions = and(
-      eq(predictions.isShared, true),
-      eq(predictions.status, 'completed'),
-      sql`${predictions.imageUrl} IS NOT NULL`
-    );
+    const whereConditions: Prisma.PredictionWhereInput = {
+      isShared: true,
+      status: 'completed',
+      imageUrl: {
+        not: null
+      }
+    };
 
     // Add style filter if provided
-    const conditions = style 
-      ? and(baseConditions, eq(predictions.style, style))
-      : baseConditions;
+    if (style) {
+      whereConditions.style = style;
+    }
 
     // Determine sort order
-    let orderBy;
+    let orderBy: Prisma.PredictionOrderByWithRelationInput[];
+    
     switch (sortBy) {
       case 'popular':
-        orderBy = [desc(predictions.likesCount), desc(predictions.createdAt)];
+        orderBy = [
+          { likesCount: 'desc' },
+          { createdAt: 'desc' }
+        ];
         break;
       case 'trending':
-        // Trending = combination of recent + popular
+        // For trending, we'll use a combination approach
+        // Since Prisma doesn't support complex SQL expressions in orderBy,
+        // we'll fetch by popular first, then filter by recent
         orderBy = [
-          desc(sql`(${predictions.likesCount} * 0.7 + EXTRACT(EPOCH FROM (NOW() - ${predictions.createdAt})) / -86400 * 0.3)`),
-          desc(predictions.createdAt)
+          { likesCount: 'desc' },
+          { createdAt: 'desc' }
         ];
+        // Add date filter for trending (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        whereConditions.createdAt = {
+          gte: sevenDaysAgo
+        };
         break;
       case 'newest':
       default:
-        orderBy = [desc(predictions.createdAt)];
+        orderBy = [{ createdAt: 'desc' }];
         break;
     }
 
-    // Fetch predictions with user info
-    const publicPredictions = await db
-      .select({
-        id: predictions.id,
-        imageUrl: predictions.imageUrl,
-        prompt: predictions.prompt,
-        style: predictions.style,
-        likesCount: predictions.likesCount,
-        createdAt: predictions.createdAt,
-        userId: predictions.userId,
-        // Don't expose user personal info, just basic display info
-        userName: sql<string>`COALESCE(${users.firstName}, 'Anonymous') || ' ' || COALESCE(${users.lastName}, '')`.as('userName'),
-        userAvatar: users.imageUrl,
-      })
-      .from(predictions)
-      .leftJoin(users, eq(predictions.userId, users.id))
-      .where(conditions)
-      .orderBy(...orderBy)
-      .limit(limit)
-      .offset(offset);
+    // Fetch predictions with studio and user info
+    const publicPredictions = await prisma.prediction.findMany({
+      where: whereConditions,
+      orderBy: orderBy,
+      skip: offset,
+      take: limit,
+      select: {
+        id: true,
+        imageUrl: true,
+        prompt: true,
+        style: true,
+        likesCount: true,
+        createdAt: true,
+        studio: {
+          select: {
+            id: true,
+            name: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Transform data to match expected format
+    const transformedPredictions = publicPredictions.map(prediction => ({
+      id: prediction.id,
+      imageUrl: prediction.imageUrl,
+      prompt: prediction.prompt,
+      style: prediction.style,
+      likesCount: prediction.likesCount || 0,
+      createdAt: prediction.createdAt,
+      studioId: prediction.studio?.id,
+      studioName: prediction.studio?.name,
+      userName: prediction.studio?.user?.name || 'Anonymous',
+      userAvatar: prediction.studio?.user?.image,
+    }));
 
     // Get total count for pagination
-    const [totalCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(predictions)
-      .where(conditions);
+    const totalCount = await prisma.prediction.count({
+      where: whereConditions
+    });
 
-    const totalPages = Math.ceil(totalCount.count / limit);
+    const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       success: true,
       data: {
-        predictions: publicPredictions,
+        predictions: transformedPredictions,
         pagination: {
           page,
           limit,
-          totalCount: totalCount.count,
+          totalCount,
           totalPages,
           hasNext: page < totalPages,
           hasPrev: page > 1,
@@ -111,18 +145,25 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Optional: GET available styles for filtering
+// GET available styles for filtering
 export async function OPTIONS() {
   try {
-    const styles = await db
-      .selectDistinct({ style: predictions.style })
-      .from(predictions)
-      .where(and(
-        eq(predictions.isShared, true),
-        eq(predictions.status, 'completed'),
-        sql`${predictions.style} IS NOT NULL`
-      ))
-      .orderBy(predictions.style);
+    const styles = await prisma.prediction.findMany({
+      where: {
+        isShared: true,
+        status: 'completed',
+        style: {
+          not: null
+        }
+      },
+      select: {
+        style: true
+      },
+      distinct: ['style'],
+      orderBy: {
+        style: 'asc'
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -131,6 +172,159 @@ export async function OPTIONS() {
 
   } catch (error) {
     console.error('Error fetching styles:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Get gallery with advanced filters (optional endpoint)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { 
+      page = 1, 
+      limit = 20, 
+      styles = [], 
+      sortBy = 'newest',
+      search = '',
+      dateRange = null 
+    } = body;
+
+    const offset = (page - 1) * Math.min(limit, 50);
+
+    const whereConditions: Prisma.PredictionWhereInput = {
+      isShared: true,
+      status: 'completed',
+      imageUrl: {
+        not: null
+      }
+    };
+
+    // Add style filters
+    if (styles.length > 0) {
+      whereConditions.style = {
+        in: styles
+      };
+    }
+
+    // Add search filter
+    if (search) {
+      whereConditions.OR = [
+        {
+          prompt: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          studio: {
+            name: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        }
+      ];
+    }
+
+    // Add date range filter
+    if (dateRange && dateRange.from && dateRange.to) {
+      whereConditions.createdAt = {
+        gte: new Date(dateRange.from),
+        lte: new Date(dateRange.to)
+      };
+    }
+
+    // Determine sort order
+    let orderBy: Prisma.PredictionOrderByWithRelationInput[];
+    switch (sortBy) {
+      case 'popular':
+        orderBy = [{ likesCount: 'desc' }, { createdAt: 'desc' }];
+        break;
+      case 'trending':
+        orderBy = [{ likesCount: 'desc' }, { createdAt: 'desc' }];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        whereConditions.createdAt = {
+          ...whereConditions.createdAt,
+          gte: sevenDaysAgo
+        };
+        break;
+      default:
+        orderBy = [{ createdAt: 'desc' }];
+    }
+
+    const [predictions, totalCount] = await Promise.all([
+      prisma.prediction.findMany({
+        where: whereConditions,
+        orderBy: orderBy,
+        skip: offset,
+        take: Math.min(limit, 50),
+        select: {
+          id: true,
+          imageUrl: true,
+          prompt: true,
+          style: true,
+          likesCount: true,
+          createdAt: true,
+          studio: {
+            select: {
+              id: true,
+              name: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.prediction.count({ where: whereConditions })
+    ]);
+
+    const transformedPredictions = predictions.map(prediction => ({
+      id: prediction.id,
+      imageUrl: prediction.imageUrl,
+      prompt: prediction.prompt,
+      style: prediction.style,
+      likesCount: prediction.likesCount || 0,
+      createdAt: prediction.createdAt,
+      studioId: prediction.studio?.id,
+      studioName: prediction.studio?.name,
+      userName: prediction.studio?.user?.name || 'Anonymous',
+      userAvatar: prediction.studio?.user?.image,
+    }));
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        predictions: transformedPredictions,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+        filters: {
+          styles,
+          sortBy,
+          search,
+          dateRange
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching filtered gallery:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
