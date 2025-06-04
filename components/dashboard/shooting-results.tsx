@@ -241,23 +241,24 @@ export function ShootingResults({ predictions: initialPredictions, studioId, stu
                                         )}
                                     </div>
                                     <div className="space-y-1 text-xs">
-                                        <div className="flex items-center justify-between">
-                                            <Badge className="font-urban text-xs" variant="secondary">
-                                                {prediction.style}
-                                            </Badge>
-                                            <span className="hidden items-center gap-1 text-muted-foreground sm:flex">
-                                                <span className={`border-1 inline-block size-2 rounded-full ${getStatusColor(prediction.status)}`} title={prediction.status} />
-                                                {getTimeAgo(prediction.createdAt)}
-                                            </span>
+                                      <div className="flex items-center justify-between">
+                                        <Badge className="font-urban text-xs" variant="secondary">
+                                          {prediction.style}
+                                        </Badge>
+                                        <span className="hidden items-center gap-1 text-muted-foreground sm:flex">
+                                          <span className={`border-1 inline-block size-2 rounded-full ${getStatusColor(prediction.status)}`} title={prediction.status} />
+                                          {getTimeAgo(prediction.createdAt)}
+                                        </span>
+                                      </div>
+                                    
+                                      {prediction.prompt && (
+                                        <div className="flex flex-col gap-1 pt-2">
+                                          <p className="text-xs text-muted-foreground break-words">{prediction.prompt}</p>
+                                          <Button variant="outline" size="sm" onClick={() => handleCopy(prediction.prompt)}>
+                                            <Clipboard className="mr-1 h-3 w-3" /> Copy Prompt
+                                          </Button>
                                         </div>
-                                        {prediction.prompt && (
-                                            <div className="flex flex-col gap-1 pt-2">
-                                                <p className="text-xs text-muted-foreground break-words">{prediction.prompt}</p>
-                                                <Button variant="outline" size="sm" onClick={() => handleCopy(prediction.prompt)}>
-                                                    <Clipboard className="mr-1 h-3 w-3" /> Copy Prompt
-                                                </Button>
-                                            </div>
-                                        )}
+                                      )}
                                     </div>
                                 </div>
                             ))}
