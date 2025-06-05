@@ -526,9 +526,13 @@ export function ShootingResults({
                                                     {/* ✅ Solo icono de estado compartido - SIN TEXTO */}
                                                     <div className="flex items-center">
                                                         {prediction.isShared ? (
-                                                            <Globe className="w-3 h-3 text-green-600" title="Public" />
+                                                            <div title="Public">
+                                                                <Globe className="w-3 h-3 text-green-600" />
+                                                            </div>
                                                         ) : (
-                                                            <Lock className="w-3 h-3 text-gray-500" title="Private" />
+                                                            <div title="Private">
+                                                                <Lock className="w-3 h-3 text-gray-500" />
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
