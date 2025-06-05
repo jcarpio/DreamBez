@@ -1,9 +1,3 @@
-// components/providers/user-provider.tsx
-"use client";
-
-import { createContext, useContext, ReactNode } from 'react';
-
-// components/providers/user-provider.tsx
 "use client";
 
 import { createContext, useContext, ReactNode } from 'react';
