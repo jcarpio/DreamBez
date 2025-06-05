@@ -137,7 +137,8 @@ export function ShootingResults({
 
         if (loadingActions.has(predictionId)) return;
 
-        setLoadingActions(prev => new Set([...prev, predictionId]));
+        // Fix: Use Array.from() instead of spread operator
+        setLoadingActions(prev => new Set(Array.from(prev).concat([predictionId])));
         
         try {
             const isCurrentlyLiked = likedImages.has(predictionId);
@@ -193,7 +194,8 @@ export function ShootingResults({
     const handleToggleShare = async (predictionId: string) => {
         if (loadingActions.has(predictionId)) return;
 
-        setLoadingActions(prev => new Set([...prev, predictionId]));
+        // Fix: Use Array.from() instead of spread operator
+        setLoadingActions(prev => new Set(Array.from(prev).concat([predictionId])));
         
         try {
             const prediction = predictions.find(p => p.id === predictionId);
