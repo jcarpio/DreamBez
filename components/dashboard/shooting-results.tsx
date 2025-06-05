@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
-import { useUser } from "@/components/providers/user-provider"; // ✅ NUEVA IMPORTACIÓN
+import { useUser } from "@/components/providers/user-provider";
 
 interface Prediction {
     id: string;
@@ -31,7 +31,6 @@ interface ShootingResultsProps {
     studioId: string;
     studioStatus: string;
     onShootComplete: () => void;
-    // ✅ QUITADA: currentUserId?: string; - Ya no necesaria
 }
 
 const downloadImage = async (imageUrl: string) => {
@@ -88,13 +87,10 @@ export function ShootingResults({
     studioId, 
     studioStatus, 
     onShootComplete
-    // ✅ QUITADA: currentUserId - Ya no necesaria
 }: ShootingResultsProps) {
-    // ✅ NUEVA LÍNEA: Obtener usuario del context con debug
     const { user } = useUser();
     const currentUserId = user?.id || null;
     
-    // ✅ Debug: Verificar que recibimos el usuario
     console.log('ShootingResults - user from context:', user);
     console.log('ShootingResults - currentUserId:', currentUserId);
     
@@ -105,7 +101,6 @@ export function ShootingResults({
     const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
     const { isMobile } = useMediaQuery();
 
-    // Load which predictions are in user's favorites
     const loadUserFavorites = useCallback(async () => {
         if (!currentUserId) return;
         
@@ -119,7 +114,6 @@ export function ShootingResults({
             
             if (response.ok) {
                 const { favorites } = await response.json();
-                // Fix: Explicitly type the Set as Set<string>
                 const favoriteIds = new Set<string>(
                     favorites.map((f: { predictionId: string }) => f.predictionId)
                 );
@@ -128,15 +122,13 @@ export function ShootingResults({
         } catch (error) {
             console.error("Error loading user favorites:", error);
         }
-    }, [currentUserId]); // Add currentUserId as dependency
+    }, [currentUserId]);
 
     useEffect(() => {
         setPredictions(initialPredictions);
         setProcessingPredictions(initialPredictions.filter(p => p.status === "processing").map(p => p.id));
-        
-        // Load user's favorite status for each prediction
         loadUserFavorites();
-    }, [initialPredictions, loadUserFavorites]); // Add loadUserFavorites to dependencies
+    }, [initialPredictions, loadUserFavorites]);
 
     const handleLike = async (predictionId: string) => {
         if (!currentUserId) {
@@ -146,7 +138,6 @@ export function ShootingResults({
 
         if (loadingActions.has(predictionId)) return;
 
-        // Fix: Use Array.from() instead of spread operator
         setLoadingActions(prev => new Set(Array.from(prev).concat([predictionId])));
         
         try {
@@ -164,7 +155,6 @@ export function ShootingResults({
             if (response.ok) {
                 const data = await response.json();
                 
-                // Update local liked state
                 setLikedImages(prev => {
                     const newSet = new Set(prev);
                     if (isCurrentlyLiked) {
@@ -177,7 +167,6 @@ export function ShootingResults({
                     return newSet;
                 });
 
-                // Update likes count in predictions
                 setPredictions(prev => 
                     prev.map(p => 
                         p.id === predictionId 
@@ -203,7 +192,6 @@ export function ShootingResults({
     const handleToggleShare = async (predictionId: string) => {
         if (loadingActions.has(predictionId)) return;
 
-        // Fix: Use Array.from() instead of spread operator
         setLoadingActions(prev => new Set(Array.from(prev).concat([predictionId])));
         
         try {
@@ -255,7 +243,6 @@ export function ShootingResults({
                     url: imageUrl,
                 });
             } catch (error) {
-                // Fallback to copy
                 navigator.clipboard.writeText(imageUrl);
                 toast.success("Link copied to clipboard");
             }
@@ -334,7 +321,6 @@ export function ShootingResults({
                                 
                                 return (
                                     <div key={prediction.id} className="group relative">
-                                        {/* Image Container */}
                                         <div 
                                             className="relative aspect-[3/4] overflow-hidden rounded-xl border-2 border-transparent bg-gradient-to-br from-gray-100 to-gray-200 shadow-md transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-purple-200"
                                             onMouseEnter={() => setHoveredImage(prediction.id)}
@@ -425,28 +411,36 @@ export function ShootingResults({
                                                         </Dialog>
                                                     )}
 
-                                                    {/* Hover overlay with information */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                                                        {/* Status indicator */}
                                                         <div className="absolute top-3 left-3">
                                                             <div className={`w-3 h-3 rounded-full ${getStatusColor(prediction.status)} shadow-lg`} />
                                                         </div>
 
-                                                        {/* Share status indicator */}
+                                                        {/* Estado compartido - SIEMPRE VISIBLE */}
                                                         <div className="absolute top-3 right-3 flex items-center space-x-2">
-                                                            {prediction.isShared && (
-                                                                <div className="bg-green-500/80 backdrop-blur-sm rounded-full p-1">
+                                                            <div className={`rounded-full p-1.5 backdrop-blur-sm ${prediction.isShared ? 'bg-green-500/90' : 'bg-gray-500/90'}`}>
+                                                                {prediction.isShared ? (
                                                                     <Globe className="w-3 h-3 text-white" />
-                                                                </div>
-                                                            )}
+                                                                ) : (
+                                                                    <Lock className="w-3 h-3 text-white" />
+                                                                )}
+                                                            </div>
                                                             <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
                                                                 {getTimeAgo(prediction.createdAt)}
                                                             </span>
                                                         </div>
 
-                                                        {/* Actions - Instagram style */}
+                                                        {/* Contador de likes - SIEMPRE VISIBLE si hay likes */}
+                                                        {(prediction.likesCount ?? 0) > 0 && (
+                                                            <div className="absolute top-3 left-14">
+                                                                <div className="bg-red-500/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
+                                                                    <Heart className="w-3 h-3 fill-white text-white" />
+                                                                    <span className="text-white text-xs font-medium">{prediction.likesCount}</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
                                                         <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
-                                                            {/* Share toggle button (only for owner) */}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -465,7 +459,6 @@ export function ShootingResults({
                                                                 )}
                                                             </button>
 
-                                                            {/* Like button */}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -484,7 +477,6 @@ export function ShootingResults({
                                                                 )}
                                                             </button>
 
-                                                            {/* Share link button */}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -496,8 +488,6 @@ export function ShootingResults({
                                                                 <Share2 className="w-5 h-5 text-white" />
                                                             </button>
                                                         </div>
-
-
                                                     </div>
                                                 </>
                                             ) : (
@@ -507,9 +497,7 @@ export function ShootingResults({
                                             )}
                                         </div>
                                         
-                                        {/* Bottom information redesigned */}
                                         <div className="mt-3 space-y-3">
-                                            {/* Header with style and actions */}
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-2">
                                                     <Badge 
@@ -519,16 +507,30 @@ export function ShootingResults({
                                                         {prediction.style}
                                                     </Badge>
                                                     
-                                                    {/* Likes count */}
+                                                    {/* Contador de likes mejorado */}
                                                     {(prediction.likesCount ?? 0) > 0 && (
                                                         <span className="text-xs text-gray-500 flex items-center">
                                                             <Heart className="w-3 h-3 mr-1 fill-red-500 text-red-500" />
                                                             {prediction.likesCount}
                                                         </span>
                                                     )}
+                                                    
+                                                    {/* Estado compartido */}
+                                                    <div className="flex items-center">
+                                                        {prediction.isShared ? (
+                                                            <div className="flex items-center text-xs text-green-600">
+                                                                <Globe className="w-3 h-3 mr-1" />
+                                                                <span>Public</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center text-xs text-gray-500">
+                                                                <Lock className="w-3 h-3 mr-1" />
+                                                                <span>Private</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 
-                                                {/* Compact actions for desktop */}
                                                 <div className="hidden sm:flex items-center space-x-1">
                                                     <button
                                                         onClick={() => handleLike(prediction.id)}
@@ -564,8 +566,6 @@ export function ShootingResults({
                                                     </button>
                                                 </div>
                                             </div>
-
-                                            {/* Improved prompt section - REMOVED */}
                                         </div>
                                     </div>
                                 );
