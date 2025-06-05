@@ -34,20 +34,55 @@ interface ShootingResultsProps {
 }
 
 const downloadImage = async (imageUrl: string) => {
-    const response = await fetch(imageUrl, {
-        method: 'GET',
-        mode: 'cors',
-    });
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = imageUrl.split('/').pop() || 'prediction-image.jpg';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+    try {
+        // Try direct download first (works for same-origin images)
+        const response = await fetch(imageUrl, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                'Accept': 'image/*',
+            },
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = imageUrl.split('/').pop()?.split('?')[0] || 'dreambez-image.jpg';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success("Image downloaded successfully!");
+        } else {
+            throw new Error('Fetch failed');
+        }
+    } catch (error) {
+        console.log('CORS fetch failed, trying alternative method:', error);
+        
+        // Fallback: Open image in new tab for manual download
+        try {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.target = '_blank';
+            link.download = imageUrl.split('/').pop()?.split('?')[0] || 'dreambez-image.jpg';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success("Image opened in new tab - right-click to save!");
+        } catch (fallbackError) {
+            console.error('All download methods failed:', fallbackError);
+            // Last resort: copy URL to clipboard
+            navigator.clipboard.writeText(imageUrl).then(() => {
+                toast.success("Image URL copied to clipboard!");
+            }).catch(() => {
+                toast.error("Download failed. Please right-click the image to save.");
+            });
+        }
+    }
 };
 
 const getStatusColor = (status: string): string => {
