@@ -332,15 +332,20 @@ export function ShootingResults({
                                                 </div>
                                             ) : prediction.imageUrl ? (
                                                 <>
+                                                    {/* Image display without click handler */}
+                                                    <img
+                                                        src={prediction.imageUrl}
+                                                        alt="Shooting Result"
+                                                        className="absolute inset-0 size-full object-cover transition-all duration-300"
+                                                    />
+
                                                     {/* Mobile modal using Drawer */}
                                                     {isMobile ? (
                                                         <Drawer.Root>
                                                             <Drawer.Trigger asChild>
-                                                                <img
-                                                                    src={prediction.imageUrl}
-                                                                    alt="Shooting Result"
-                                                                    className="absolute inset-0 size-full cursor-pointer object-cover transition-all duration-300"
-                                                                />
+                                                                <div className="hidden">
+                                                                    <button>Open Modal</button>
+                                                                </div>
                                                             </Drawer.Trigger>
                                                             <Drawer.Portal>
                                                                 <Drawer.Overlay className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm" />
@@ -373,14 +378,12 @@ export function ShootingResults({
                                                             </Drawer.Portal>
                                                         </Drawer.Root>
                                                     ) : (
-                                                        /* Desktop modal using Dialog - Fixed version from old code */
+                                                        /* Desktop modal using Dialog */
                                                         <Dialog>
                                                             <DialogTrigger asChild>
-                                                                <img
-                                                                    src={prediction.imageUrl}
-                                                                    alt="Shooting Result"
-                                                                    className="absolute inset-0 size-full cursor-pointer object-cover transition-all duration-300 hover:scale-105"
-                                                                />
+                                                                <div className="hidden">
+                                                                    <button>Open Modal</button>
+                                                                </div>
                                                             </DialogTrigger>
                                                             <DialogTitle className="sr-only">View Image</DialogTitle>
                                                             <DialogContent className="flex overflow-hidden pr-6 lg:p-0 max-w-[90vw] h-[90vh] bg-black/95 border-0">
@@ -448,6 +451,25 @@ export function ShootingResults({
 
                                                         {/* Action buttons */}
                                                         <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
+                                                            {/* Download/View button */}
+                                                            <Drawer.Trigger className={isMobile ? "block" : "hidden"}>
+                                                                <button
+                                                                    className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
+                                                                    title="View and download image"
+                                                                >
+                                                                    <Download className="w-5 h-5 text-white" />
+                                                                </button>
+                                                            </Drawer.Trigger>
+
+                                                            <DialogTrigger className={!isMobile ? "block" : "hidden"}>
+                                                                <button
+                                                                    className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
+                                                                    title="View and download image"
+                                                                >
+                                                                    <Download className="w-5 h-5 text-white" />
+                                                                </button>
+                                                            </DialogTrigger>
+                                                            
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -537,22 +559,25 @@ export function ShootingResults({
                                                     </div>
                                                 </div>
                                                 
-                                                {/* Desktop action buttons */}
+                                                {/* Desktop action buttons - only show heart if no likes count is displayed above */}
                                                 <div className="hidden sm:flex items-center space-x-1">
-                                                    <button
-                                                        onClick={() => handleLike(prediction.id)}
-                                                        disabled={isLoading}
-                                                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
-                                                        title="Add to favorites"
-                                                    >
-                                                        {isLoading && loadingActions.has(prediction.id) ? (
-                                                            <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                                                        ) : (
-                                                            <Heart 
-                                                                className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
-                                                            />
-                                                        )}
-                                                    </button>
+                                                    {/* Only show heart button if there are no likes to avoid duplication */}
+                                                    {(prediction.likesCount ?? 0) === 0 && (
+                                                        <button
+                                                            onClick={() => handleLike(prediction.id)}
+                                                            disabled={isLoading}
+                                                            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                                            title="Add to favorites"
+                                                        >
+                                                            {isLoading && loadingActions.has(prediction.id) ? (
+                                                                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                                                            ) : (
+                                                                <Heart 
+                                                                    className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
+                                                                />
+                                                            )}
+                                                        </button>
+                                                    )}
                                                     
                                                     {prediction.prompt && (
                                                         <button
