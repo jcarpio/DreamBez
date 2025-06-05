@@ -335,6 +335,7 @@ export function ShootingResults({
                                                 </div>
                                             ) : prediction.imageUrl ? (
                                                 <>
+                                                    {/* ✅ MODAL PARA VER IMAGEN A GRAN TAMAÑO */}
                                                     {isMobile ? (
                                                         <Drawer.Root>
                                                             <Drawer.Trigger asChild>
@@ -383,8 +384,8 @@ export function ShootingResults({
                                                                     className="absolute inset-0 size-full cursor-pointer object-cover transition-all duration-300"
                                                                 />
                                                             </DialogTrigger>
-                                                            <DialogTitle></DialogTitle>
-                                                            <DialogContent className="max-w-4xl p-0 bg-black/95">
+                                                            <DialogContent className="max-w-4xl p-0 bg-black/95 border-0">
+                                                                <DialogTitle className="sr-only">View Image</DialogTitle>
                                                                 <div className="relative flex h-[90vh] w-full items-center justify-center p-4">
                                                                     <img
                                                                         src={prediction.imageUrl}
@@ -397,12 +398,17 @@ export function ShootingResults({
                                                                         onClick={() => downloadImage(prediction.imageUrl!)}
                                                                         variant="secondary"
                                                                         size="sm"
+                                                                        className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20"
                                                                     >
                                                                         <Download className="mr-2 size-4" />
                                                                         Download
                                                                     </Button>
                                                                     <DialogClose asChild>
-                                                                        <Button variant="secondary" size="sm">
+                                                                        <Button 
+                                                                            variant="secondary" 
+                                                                            size="sm"
+                                                                            className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20"
+                                                                        >
                                                                             Close
                                                                         </Button>
                                                                     </DialogClose>
@@ -411,12 +417,13 @@ export function ShootingResults({
                                                         </Dialog>
                                                     )}
 
+                                                    {/* ✅ OVERLAY SIMPLIFICADO - Solo aparece en hover */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                                                         <div className="absolute top-3 left-3">
                                                             <div className={`w-3 h-3 rounded-full ${getStatusColor(prediction.status)} shadow-lg`} />
                                                         </div>
 
-                                                        {/* Estado compartido - SIEMPRE VISIBLE */}
+                                                        {/* ✅ Estado compartido - Solo icono */}
                                                         <div className="absolute top-3 right-3 flex items-center space-x-2">
                                                             <div className={`rounded-full p-1.5 backdrop-blur-sm ${prediction.isShared ? 'bg-green-500/90' : 'bg-gray-500/90'}`}>
                                                                 {prediction.isShared ? (
@@ -430,7 +437,7 @@ export function ShootingResults({
                                                             </span>
                                                         </div>
 
-                                                        {/* Contador de likes - SIEMPRE VISIBLE si hay likes */}
+                                                        {/* ✅ Contador de likes - Solo si hay likes */}
                                                         {(prediction.likesCount ?? 0) > 0 && (
                                                             <div className="absolute top-3 left-14">
                                                                 <div className="bg-red-500/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
@@ -497,6 +504,7 @@ export function ShootingResults({
                                             )}
                                         </div>
                                         
+                                        {/* ✅ INFORMACIÓN SIMPLIFICADA DEBAJO DE LA IMAGEN */}
                                         <div className="mt-3 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-2">
@@ -507,7 +515,7 @@ export function ShootingResults({
                                                         {prediction.style}
                                                     </Badge>
                                                     
-                                                    {/* Contador de likes mejorado */}
+                                                    {/* ✅ Solo contador de likes si hay likes */}
                                                     {(prediction.likesCount ?? 0) > 0 && (
                                                         <span className="text-xs text-gray-500 flex items-center">
                                                             <Heart className="w-3 h-3 mr-1 fill-red-500 text-red-500" />
@@ -515,18 +523,12 @@ export function ShootingResults({
                                                         </span>
                                                     )}
                                                     
-                                                    {/* Estado compartido */}
+                                                    {/* ✅ Solo icono de estado compartido - SIN TEXTO */}
                                                     <div className="flex items-center">
                                                         {prediction.isShared ? (
-                                                            <div className="flex items-center text-xs text-green-600">
-                                                                <Globe className="w-3 h-3 mr-1" />
-                                                                <span>Public</span>
-                                                            </div>
+                                                            <Globe className="w-3 h-3 text-green-600" title="Public" />
                                                         ) : (
-                                                            <div className="flex items-center text-xs text-gray-500">
-                                                                <Lock className="w-3 h-3 mr-1" />
-                                                                <span>Private</span>
-                                                            </div>
+                                                            <Lock className="w-3 h-3 text-gray-500" title="Private" />
                                                         )}
                                                     </div>
                                                 </div>
