@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Download, Camera, Heart, Share2, Copy, Eye, Globe, Lock } from "lucide-react";
+import { Loader2, Download, Camera, Heart, Share2, Copy, Globe, Lock } from "lucide-react";
 import { Icons } from "@/components/shared/icons";
 import { EmptyPlaceholder } from "@/components/shared/empty-placeholder";
 import { ShootModal } from "@/components/modals/shoot";
@@ -90,9 +90,6 @@ export function ShootingResults({
 }: ShootingResultsProps) {
     const { user } = useUser();
     const currentUserId = user?.id || null;
-    
-    console.log('ShootingResults - user from context:', user);
-    console.log('ShootingResults - currentUserId:', currentUserId);
     
     const [predictions, setPredictions] = useState(initialPredictions);
     const [processingPredictions, setProcessingPredictions] = useState<string[]>([]);
@@ -335,7 +332,7 @@ export function ShootingResults({
                                                 </div>
                                             ) : prediction.imageUrl ? (
                                                 <>
-                                                    {/* ✅ MODAL PARA VER IMAGEN A GRAN TAMAÑO */}
+                                                    {/* Mobile modal using Drawer */}
                                                     {isMobile ? (
                                                         <Drawer.Root>
                                                             <Drawer.Trigger asChild>
@@ -376,24 +373,25 @@ export function ShootingResults({
                                                             </Drawer.Portal>
                                                         </Drawer.Root>
                                                     ) : (
+                                                        /* Desktop modal using Dialog - Fixed version from old code */
                                                         <Dialog>
                                                             <DialogTrigger asChild>
                                                                 <img
                                                                     src={prediction.imageUrl}
                                                                     alt="Shooting Result"
-                                                                    className="absolute inset-0 size-full cursor-pointer object-cover transition-all duration-300"
+                                                                    className="absolute inset-0 size-full cursor-pointer object-cover transition-all duration-300 hover:scale-105"
                                                                 />
                                                             </DialogTrigger>
-                                                            <DialogContent className="max-w-4xl p-0 bg-black/95 border-0">
-                                                                <DialogTitle className="sr-only">View Image</DialogTitle>
-                                                                <div className="relative flex h-[90vh] w-full items-center justify-center p-4">
+                                                            <DialogTitle className="sr-only">View Image</DialogTitle>
+                                                            <DialogContent className="flex overflow-hidden pr-6 lg:p-0 max-w-[90vw] h-[90vh] bg-black/95 border-0">
+                                                                <div className="relative flex h-full w-full items-center justify-center p-4">
                                                                     <img
                                                                         src={prediction.imageUrl}
                                                                         alt="Shooting Result"
                                                                         className="size-auto max-h-full max-w-full rounded-lg"
                                                                     />
                                                                 </div>
-                                                                <div className="absolute inset-x-0 bottom-4 flex justify-center space-x-3 p-4">
+                                                                <div className="absolute inset-x-0 bottom-10 flex justify-center space-x-2 p-4 lg:bottom-4">
                                                                     <Button
                                                                         onClick={() => downloadImage(prediction.imageUrl!)}
                                                                         variant="secondary"
@@ -417,13 +415,14 @@ export function ShootingResults({
                                                         </Dialog>
                                                     )}
 
-                                                    {/* ✅ OVERLAY SIMPLIFICADO - Solo aparece en hover */}
+                                                    {/* Hover overlay with controls - only shown on hover */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                                                        {/* Status indicator */}
                                                         <div className="absolute top-3 left-3">
                                                             <div className={`w-3 h-3 rounded-full ${getStatusColor(prediction.status)} shadow-lg`} />
                                                         </div>
 
-                                                        {/* ✅ Estado compartido - Solo icono */}
+                                                        {/* Share status and time */}
                                                         <div className="absolute top-3 right-3 flex items-center space-x-2">
                                                             <div className={`rounded-full p-1.5 backdrop-blur-sm ${prediction.isShared ? 'bg-green-500/90' : 'bg-gray-500/90'}`}>
                                                                 {prediction.isShared ? (
@@ -437,7 +436,7 @@ export function ShootingResults({
                                                             </span>
                                                         </div>
 
-                                                        {/* ✅ Contador de likes - Solo si hay likes */}
+                                                        {/* Likes counter - only if has likes */}
                                                         {(prediction.likesCount ?? 0) > 0 && (
                                                             <div className="absolute top-3 left-14">
                                                                 <div className="bg-red-500/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
@@ -447,6 +446,7 @@ export function ShootingResults({
                                                             </div>
                                                         )}
 
+                                                        {/* Action buttons */}
                                                         <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
                                                             <button
                                                                 onClick={(e) => {
@@ -504,7 +504,7 @@ export function ShootingResults({
                                             )}
                                         </div>
                                         
-                                        {/* ✅ INFORMACIÓN SIMPLIFICADA DEBAJO DE LA IMAGEN */}
+                                        {/* Bottom info - simplified design */}
                                         <div className="mt-3 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-2">
@@ -515,7 +515,7 @@ export function ShootingResults({
                                                         {prediction.style}
                                                     </Badge>
                                                     
-                                                    {/* ✅ Solo contador de likes si hay likes */}
+                                                    {/* Likes counter - only if has likes */}
                                                     {(prediction.likesCount ?? 0) > 0 && (
                                                         <span className="text-xs text-gray-500 flex items-center">
                                                             <Heart className="w-3 h-3 mr-1 fill-red-500 text-red-500" />
@@ -523,7 +523,7 @@ export function ShootingResults({
                                                         </span>
                                                     )}
                                                     
-                                                    {/* ✅ Solo icono de estado compartido - SIN TEXTO */}
+                                                    {/* Share status icon only - no text */}
                                                     <div className="flex items-center">
                                                         {prediction.isShared ? (
                                                             <div title="Public">
@@ -537,6 +537,7 @@ export function ShootingResults({
                                                     </div>
                                                 </div>
                                                 
+                                                {/* Desktop action buttons */}
                                                 <div className="hidden sm:flex items-center space-x-1">
                                                     <button
                                                         onClick={() => handleLike(prediction.id)}
