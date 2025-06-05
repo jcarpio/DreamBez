@@ -96,6 +96,7 @@ export function ShootingResults({
     const [hoveredImage, setHoveredImage] = useState<string | null>(null);
     const [likedImages, setLikedImages] = useState<Set<string>>(new Set());
     const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
+    const [openModalId, setOpenModalId] = useState<string | null>(null);
     const { isMobile } = useMediaQuery();
 
     const loadUserFavorites = useCallback(async () => {
@@ -332,91 +333,80 @@ export function ShootingResults({
                                                 </div>
                                             ) : prediction.imageUrl ? (
                                                 <>
-                                                    {/* Image display without click handler */}
+                                                    {/* Image display */}
                                                     <img
                                                         src={prediction.imageUrl}
                                                         alt="Shooting Result"
                                                         className="absolute inset-0 size-full object-cover transition-all duration-300"
                                                     />
 
-                                                    {/* Mobile modal using Drawer */}
-                                                    {isMobile ? (
-                                                        <Drawer.Root>
-                                                            <Drawer.Trigger asChild>
-                                                                <div className="hidden">
-                                                                    <button>Open Modal</button>
-                                                                </div>
-                                                            </Drawer.Trigger>
-                                                            <Drawer.Portal>
-                                                                <Drawer.Overlay className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm" />
-                                                                <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 mb-10 mt-24 rounded-t-[20px] border bg-white focus:outline-none">
-                                                                    <div className="mx-auto my-4 h-1.5 w-12 shrink-0 rounded-full bg-gray-300" />
-                                                                    <div className="relative flex h-[70vh] w-full items-center justify-center p-4">
-                                                                        <img
-                                                                            src={prediction.imageUrl}
-                                                                            alt="Shooting Result"
-                                                                            className="size-auto max-h-full max-w-full rounded-lg"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex justify-center space-x-3 bg-white p-4 border-t">
-                                                                        <Button
-                                                                            onClick={() => downloadImage(prediction.imageUrl!)}
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            className="flex-1"
-                                                                        >
-                                                                            <Download className="mr-2 size-4" />
-                                                                            Download
-                                                                        </Button>
-                                                                        <Drawer.Close asChild>
-                                                                            <Button variant="outline" size="sm" className="flex-1">
-                                                                                Close
-                                                                            </Button>
-                                                                        </Drawer.Close>
-                                                                    </div>
-                                                                </Drawer.Content>
-                                                            </Drawer.Portal>
-                                                        </Drawer.Root>
-                                                    ) : (
-                                                        /* Desktop modal using Dialog */
-                                                        <Dialog>
-                                                            <DialogTrigger asChild>
-                                                                <div className="hidden">
-                                                                    <button>Open Modal</button>
-                                                                </div>
-                                                            </DialogTrigger>
-                                                            <DialogTitle className="sr-only">View Image</DialogTitle>
-                                                            <DialogContent className="flex overflow-hidden pr-6 lg:p-0 max-w-[90vw] h-[90vh] bg-black/95 border-0">
-                                                                <div className="relative flex h-full w-full items-center justify-center p-4">
+                                                    {/* Modal components - controlled by state */}
+                                                    <Drawer.Root open={isMobile && openModalId === prediction.id} onOpenChange={(open) => !open && setOpenModalId(null)}>
+                                                        <Drawer.Portal>
+                                                            <Drawer.Overlay className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm" />
+                                                            <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 mb-10 mt-24 rounded-t-[20px] border bg-white focus:outline-none">
+                                                                <div className="mx-auto my-4 h-1.5 w-12 shrink-0 rounded-full bg-gray-300" />
+                                                                <div className="relative flex h-[70vh] w-full items-center justify-center p-4">
                                                                     <img
                                                                         src={prediction.imageUrl}
                                                                         alt="Shooting Result"
                                                                         className="size-auto max-h-full max-w-full rounded-lg"
                                                                     />
                                                                 </div>
-                                                                <div className="absolute inset-x-0 bottom-10 flex justify-center space-x-2 p-4 lg:bottom-4">
+                                                                <div className="flex justify-center space-x-3 bg-white p-4 border-t">
                                                                     <Button
                                                                         onClick={() => downloadImage(prediction.imageUrl!)}
-                                                                        variant="secondary"
+                                                                        variant="outline"
                                                                         size="sm"
-                                                                        className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20"
+                                                                        className="flex-1"
                                                                     >
                                                                         <Download className="mr-2 size-4" />
                                                                         Download
                                                                     </Button>
-                                                                    <DialogClose asChild>
-                                                                        <Button 
-                                                                            variant="secondary" 
-                                                                            size="sm"
-                                                                            className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20"
-                                                                        >
-                                                                            Close
-                                                                        </Button>
-                                                                    </DialogClose>
+                                                                    <Button 
+                                                                        onClick={() => setOpenModalId(null)}
+                                                                        variant="outline" 
+                                                                        size="sm" 
+                                                                        className="flex-1"
+                                                                    >
+                                                                        Close
+                                                                    </Button>
                                                                 </div>
-                                                            </DialogContent>
-                                                        </Dialog>
-                                                    )}
+                                                            </Drawer.Content>
+                                                        </Drawer.Portal>
+                                                    </Drawer.Root>
+
+                                                    <Dialog open={!isMobile && openModalId === prediction.id} onOpenChange={(open) => !open && setOpenModalId(null)}>
+                                                        <DialogTitle className="sr-only">View Image</DialogTitle>
+                                                        <DialogContent className="flex overflow-hidden pr-6 lg:p-0 max-w-[90vw] h-[90vh] bg-black/95 border-0">
+                                                            <div className="relative flex h-full w-full items-center justify-center p-4">
+                                                                <img
+                                                                    src={prediction.imageUrl}
+                                                                    alt="Shooting Result"
+                                                                    className="size-auto max-h-full max-w-full rounded-lg"
+                                                                />
+                                                            </div>
+                                                            <div className="absolute inset-x-0 bottom-10 flex justify-center space-x-2 p-4 lg:bottom-4">
+                                                                <Button
+                                                                    onClick={() => downloadImage(prediction.imageUrl!)}
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20"
+                                                                >
+                                                                    <Download className="mr-2 size-4" />
+                                                                    Download
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => setOpenModalId(null)}
+                                                                    variant="secondary" 
+                                                                    size="sm"
+                                                                    className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20"
+                                                                >
+                                                                    Close
+                                                                </Button>
+                                                            </div>
+                                                        </DialogContent>
+                                                    </Dialog>
 
                                                     {/* Hover overlay with controls - only shown on hover */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
@@ -451,24 +441,17 @@ export function ShootingResults({
 
                                                         {/* Action buttons */}
                                                         <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
-                                                            {/* Download/View button */}
-                                                            <Drawer.Trigger className={isMobile ? "block" : "hidden"}>
-                                                                <button
-                                                                    className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
-                                                                    title="View and download image"
-                                                                >
-                                                                    <Download className="w-5 h-5 text-white" />
-                                                                </button>
-                                                            </Drawer.Trigger>
-
-                                                            <DialogTrigger className={!isMobile ? "block" : "hidden"}>
-                                                                <button
-                                                                    className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
-                                                                    title="View and download image"
-                                                                >
-                                                                    <Download className="w-5 h-5 text-white" />
-                                                                </button>
-                                                            </DialogTrigger>
+                                                            {/* Download/View button - opens modal */}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setOpenModalId(prediction.id);
+                                                                }}
+                                                                className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
+                                                                title="View and download image"
+                                                            >
+                                                                <Download className="w-5 h-5 text-white" />
+                                                            </button>
                                                             
                                                             <button
                                                                 onClick={(e) => {
