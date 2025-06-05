@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
-import { useUser } from "@/components/providers/user-provider";
+import { useUser } from "@/components/providers/user-provider"; // ✅ NUEVA IMPORTACIÓN
 
 interface Prediction {
     id: string;
@@ -90,9 +90,13 @@ export function ShootingResults({
     onShootComplete
     // ✅ QUITADA: currentUserId - Ya no necesaria
 }: ShootingResultsProps) {
-    // ✅ NUEVA LÍNEA: Obtener usuario del context
+    // ✅ NUEVA LÍNEA: Obtener usuario del context con debug
     const { user } = useUser();
     const currentUserId = user?.id || null;
+    
+    // ✅ Debug: Verificar que recibimos el usuario
+    console.log('ShootingResults - user from context:', user);
+    console.log('ShootingResults - currentUserId:', currentUserId);
     
     const [predictions, setPredictions] = useState(initialPredictions);
     const [processingPredictions, setProcessingPredictions] = useState<string[]>([]);
@@ -493,16 +497,7 @@ export function ShootingResults({
                                                             </button>
                                                         </div>
 
-                                                        {/* Prompt preview */}
-                                                        {prediction.prompt && (
-                                                            <div className="absolute bottom-3 left-3 max-w-[calc(100%-120px)]">
-                                                                <div className="bg-black/50 backdrop-blur-sm rounded-lg p-2 max-h-20 overflow-hidden">
-                                                                    <p className="text-white text-xs leading-tight line-clamp-3">
-                                                                        {prediction.prompt}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        )}
+
                                                     </div>
                                                 </>
                                             ) : (
@@ -570,23 +565,7 @@ export function ShootingResults({
                                                 </div>
                                             </div>
 
-                                            {/* Improved prompt section */}
-                                            {prediction.prompt && prediction.prompt.trim() !== '' && (
-                                                <div className="bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-lg p-3 border border-gray-100">
-                                                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                                                        {prediction.prompt}
-                                                    </p>
-                                                    
-                                                    {/* Copy button for mobile */}
-                                                    <button 
-                                                        onClick={() => handleCopyPrompt(prediction.prompt)}
-                                                        className="sm:hidden mt-2 w-full flex items-center justify-center space-x-2 text-xs text-purple-600 hover:text-purple-700 font-medium"
-                                                    >
-                                                        <Copy className="h-3 w-3" /> 
-                                                        <span>Copy Prompt</span>
-                                                    </button>
-                                                </div>
-                                            )}
+                                            {/* Improved prompt section - REMOVED */}
                                         </div>
                                     </div>
                                 );
