@@ -62,6 +62,8 @@ interface Prediction {
     status: string;
     style: string | null;
     pId: string | null;
+    isShared?: boolean;        
+    likesCount?: number;  
 }
 
 interface StudioPageProps {
