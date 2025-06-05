@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { sidebarLinks } from "@/config/dashboard";
 import { getCurrentUser } from "@/lib/session";
+import { UserProvider } from "@/components/providers/user-provider";
 // import { SearchCommand } from "@/components/dashboard/search-command";
 import {
   DashboardSidebar,
