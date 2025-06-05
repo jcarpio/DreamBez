@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
+import { useUser } from "@/components/providers/user-provider";
 
 interface Prediction {
     id: string;
@@ -30,7 +31,7 @@ interface ShootingResultsProps {
     studioId: string;
     studioStatus: string;
     onShootComplete: () => void;
-    currentUserId?: string; // To identify if user can modify share status
+    // ✅ QUITADA: currentUserId?: string; - Ya no necesaria
 }
 
 const downloadImage = async (imageUrl: string) => {
@@ -86,9 +87,13 @@ export function ShootingResults({
     predictions: initialPredictions, 
     studioId, 
     studioStatus, 
-    onShootComplete,
-    currentUserId 
+    onShootComplete
+    // ✅ QUITADA: currentUserId - Ya no necesaria
 }: ShootingResultsProps) {
+    // ✅ NUEVA LÍNEA: Obtener usuario del context
+    const { user } = useUser();
+    const currentUserId = user?.id || null;
+    
     const [predictions, setPredictions] = useState(initialPredictions);
     const [processingPredictions, setProcessingPredictions] = useState<string[]>([]);
     const [hoveredImage, setHoveredImage] = useState<string | null>(null);
