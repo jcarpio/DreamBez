@@ -88,22 +88,26 @@ export async function POST(request: Request, { params }: { params: { id: string 
                 },
             });
 
-            // ✅ CAMBIO PRINCIPAL: Usar 'model' en lugar de 'version' para Black Forest Labs
-            const replicateConfig = modelIsBlackForest
-                ? {
-                    model: modelVersion,  // Para Black Forest Labs usar 'model'
+            // ✅ CORREGIDO: Usar configuración compatible con TypeScript
+            let output;
+            
+            if (modelIsBlackForest) {
+                // Para modelos de Black Forest Labs
+                output = await replicate.predictions.create({
+                    model: modelVersion as any,  // Type assertion para evitar error de TypeScript
                     input,
                     webhook: `${webhookUrl}?predictionId=${prediction.id}`,
-                    webhook_events_filter: ["completed"]
-                  }
-                : {
-                    version: modelVersion,  // Para otros modelos usar 'version'
+                    webhook_events_filter: ["completed"] as any  // Type assertion
+                });
+            } else {
+                // Para otros modelos
+                output = await replicate.predictions.create({
+                    version: modelVersion,
                     input,
                     webhook: `${webhookUrl}?predictionId=${prediction.id}`,
-                    webhook_events_filter: ["completed"]
-                  };
-
-            const output = await replicate.predictions.create(replicateConfig);
+                    webhook_events_filter: ["completed"] as any  // Type assertion
+                });
+            }
 
             await prisma.prediction.update({
                 where: { id: prediction.id },
