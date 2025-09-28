@@ -71,8 +71,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
               }
             : {
                 ...inputBase,
-                lora_weights: studio.hf_lora,
-                hf_api_token: env.HUGGINGFACE_API_TOKEN,
+                hf_lora: studio.hf_lora,
               };
 
                 
