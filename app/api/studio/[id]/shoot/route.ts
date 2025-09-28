@@ -71,7 +71,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
               }
             : {
                 ...inputBase,
-                hf_lora: studio.hf_lora,
+                lora_weights: studio.hf_lora,
               };
 
                 
