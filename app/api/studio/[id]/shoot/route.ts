@@ -88,12 +88,22 @@ export async function POST(request: Request, { params }: { params: { id: string 
                 },
             });
 
-            const output = await replicate.predictions.create({
-                version: modelVersion,
-                input,
-                webhook: `${webhookUrl}?predictionId=${prediction.id}`,
-                webhook_events_filter: ["completed"]
-            });
+            // ✅ CAMBIO PRINCIPAL: Usar 'model' en lugar de 'version' para Black Forest Labs
+            const replicateConfig = modelIsBlackForest
+                ? {
+                    model: modelVersion,  // Para Black Forest Labs usar 'model'
+                    input,
+                    webhook: `${webhookUrl}?predictionId=${prediction.id}`,
+                    webhook_events_filter: ["completed"]
+                  }
+                : {
+                    version: modelVersion,  // Para otros modelos usar 'version'
+                    input,
+                    webhook: `${webhookUrl}?predictionId=${prediction.id}`,
+                    webhook_events_filter: ["completed"]
+                  };
+
+            const output = await replicate.predictions.create(replicateConfig);
 
             await prisma.prediction.update({
                 where: { id: prediction.id },
@@ -107,6 +117,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         } catch (replicateError) {
             console.error("Error creating Replicate prediction:", replicateError);
+            console.error("Model version used:", modelVersion);
+            console.error("Input used:", JSON.stringify(input, null, 2));
 
             if (prediction?.id) {
                 await prisma.prediction.update({
