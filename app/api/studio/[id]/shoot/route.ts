@@ -70,8 +70,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
                 hf_api_token: env.HUGGINGFACE_API_TOKEN,
               }
             : {
+                // ...inputBase,
+                // hf_lora: studio.hf_lora,
                 ...inputBase,
-                hf_lora: studio.hf_lora,
+                lora_weights: studio.hf_lora,
+                hf_api_token: env.HUGGINGFACE_API_TOKEN,
               };
 
                 
